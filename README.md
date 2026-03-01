@@ -68,7 +68,7 @@ podcast-app/
 │   │   ├── Player.tsx          # 播放器组件
 │   │   └── EpisodeList.tsx     # 节目列表组件
 │   ├── package.json
-│   └── next.config.js
+│   └── next.config.ts
 ├── backend/                    # FastAPI (Railway 部署)
 │   ├── app/
 │   │   ├── main.py             # FastAPI 入口
@@ -82,7 +82,7 @@ podcast-app/
 │   │       ├── audio.py        # ffmpeg 合并
 │   │       └── storage.py      # R2 上传
 │   ├── generate.py             # CLI 入口: python generate.py
-│   ├── requirements.txt
+│   ├── pyproject.toml          # uv 项目配置
 │   └── Dockerfile
 ├── doc/
 │   └── architecture-decision.md
@@ -93,26 +93,42 @@ podcast-app/
 
 ## Quick Start
 
+### 本地开发
+
 ```bash
 # 后端
 cd backend
-pip install -r requirements.txt
 cp .env.example .env   # 填入 GEMINI_API_KEY, GLM_API_KEY, R2 配置
-uvicorn app.main:app --reload
+uv sync
+uv run uvicorn app.main:app --reload
+# → http://localhost:8000/api/health
 
-# 前端
+# 前端（另开终端）
 cd frontend
 npm install
 npm run dev
-
-# 生成播客
-cd backend
-python generate.py
-
-# 部署
-railway login && railway up          # 后端 → Railway
-cd frontend && vercel                # 前端 → Vercel
+# → http://localhost:3000
 ```
+
+### 部署
+
+**后端 → Railway:**
+1. 注册 [Railway](https://railway.com)，安装 CLI: `npm i -g @railway/cli`
+2. ```bash
+   cd backend
+   railway login
+   railway up
+   ```
+3. 在 Railway Dashboard 设置环境变量（参考 `backend/.env.example`）
+4. 记录后端 URL（如 `https://xxx.up.railway.app`）
+
+**前端 → Vercel:**
+1. 注册 [Vercel](https://vercel.com)，安装 CLI: `npm i -g vercel`
+2. ```bash
+   cd frontend
+   vercel
+   ```
+3. 设置环境变量 `NEXT_PUBLIC_API_URL` 为 Railway 后端 URL
 
 ## 费用
 
