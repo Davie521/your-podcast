@@ -68,10 +68,17 @@ cd frontend && vercel         # 前端
 
 ## Git 工作流
 
-- 主分支: `main`
-- 开发: 从 main 开新分支，完成后提 PR
+> **⚠️ 绝对禁止直接 push 到 main 分支！所有变更必须通过 PR 合并！⚠️**
+
+- 主分支: `main` — **受保护分支，禁止直接 push**
+- **任何改动（无论大小）都必须：**
+  1. 从 main 创建新分支（`git checkout -b feature/xxx`）
+  2. 在新分支上提交代码
+  3. 创建 Pull Request 到 main
+  4. CI 通过后合并
 - PR 描述中写 `Closes #issue号` 关联 Issue
 - 合并后 Railway + Vercel 自动部署
+- **再次强调：绝对不要 `git push origin main`，必须走 PR 流程！**
 
 ## 注意事项
 
