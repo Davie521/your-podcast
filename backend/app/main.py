@@ -2,10 +2,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.database import create_db_and_tables
 from app.models import Episode, Source, Task, TranscriptLine, User  # noqa: F401 — register tables
+from app.routers import auth
 
 
 @asynccontextmanager
@@ -17,6 +19,9 @@ async def lifespan(app: FastAPI):
 settings = get_settings()
 
 app = FastAPI(title="Your Podcast API", lifespan=lifespan)
+
+# SessionMiddleware is required by authlib for OAuth state storage
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
 origins = [
     "http://localhost:3000",
@@ -30,6 +35,8 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+app.include_router(auth.router)
 
 
 @app.get("/api/health")
