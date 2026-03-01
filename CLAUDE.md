@@ -62,7 +62,7 @@ cd frontend && vercel         # 前端
 ## 代码规范
 
 - 后端 Python: 使用 async/await, 类型注解, Pydantic 模型
-- 前端 TypeScript: Next.js App Router, React Server Components 优先
+- 前端 TypeScript: **必须遵守 [doc/frontend-coding-rules.md](doc/frontend-coding-rules.md)** — Next.js App Router, 静态导出, Tailwind CSS, 严格 TypeScript
 - 环境变量通过 .env 管理，敏感 key 不要提交到代码仓库
 - MP3 文件不提交到 Git，统一存 R2
 
