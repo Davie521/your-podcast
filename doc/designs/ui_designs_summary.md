@@ -1,24 +1,30 @@
-# Mobile UI Designs Summary
+# Mobile UI Design Options (Issue #4 - Iteration 2)
 
-This document provides an overview of the mobile UI designs generated for the podcast application (Issue #4). All designs follow a premium, modern, and dark-mode aesthetic.
+We have generated three distinct design style sets based on your feedback. All designs avoid gradients and focus on a minimalist, premium look. In the discovery screens, podcasts are presented as independent items.
 
-## Designs
+## Style Set 1: Minimalist Flat (Dark)
+High-contrast, professional, and efficient. Uses a deep charcoal background with electric blue accents.
 
-### 1. Login & Registration
-- **File:** [login_screen.png](file:///Users/chris/Documents/your-podcast/doc/designs/login_screen.png)
-- **Features:** Glassmorphism UI, social login integration, and sleek typography.
+- [Login](file:///Users/chris/Documents/your-podcast/doc/designs/set1/login.png)
+- [Profile](file:///Users/chris/Documents/your-podcast/doc/designs/set1/profile.png)
+- [Onboarding](file:///Users/chris/Documents/your-podcast/doc/designs/set1/onboarding.png)
+- [Discovery](file:///Users/chris/Documents/your-podcast/doc/designs/set1/discovery.png)
 
-### 2. User Profile
-- **File:** [profile_screen.png](file:///Users/chris/Documents/your-podcast/doc/designs/profile_screen.png)
-- **Features:** User avatar, stats (followers/following), favorites carousel, and listening history feed.
+## Style Set 2: Clean Editorial (Light)
+Typography-focused design inspired by premium magazines. Uses ample white space and elegant serif fonts.
 
-### 3. Onboarding (Interest Selection)
-- **File:** [onboarding_screen.png](file:///Users/chris/Documents/your-podcast/doc/designs/onboarding_screen.png)
-- **Features:** Interactive interest tags for topic discovery, vibrant highlights, and a clean 'Continue' flow.
+- [Login](file:///Users/chris/Documents/your-podcast/doc/designs/set2/login.png)
+- [Profile](file:///Users/chris/Documents/your-podcast/doc/designs/set2/profile.png)
+- [Onboarding](file:///Users/chris/Documents/your-podcast/doc/designs/set2/onboarding.png)
+- [Discovery](file:///Users/chris/Documents/your-podcast/doc/designs/set2/discovery.png)
 
-### 4. Discovery (Home Page)
-- **File:** [discovery_screen.png](file:///Users/chris/Documents/your-podcast/doc/designs/discovery_screen.png)
-- **Features:** Featured recommendations carousel, past episodes list, top search bar, and intuitive bottom navigation.
+## Style Set 3: Bold Typography / Swiss (Industrial)
+Structural and grid-focused. Uses a beige background, bold sans-serif type, and solid orange accents.
+
+- [Login](file:///Users/chris/Documents/your-podcast/doc/designs/set3/login.png)
+- [Profile](file:///Users/chris/Documents/your-podcast/doc/designs/set3/profile.png)
+- [Onboarding](file:///Users/chris/Documents/your-podcast/doc/designs/set3/onboarding.png)
+- *Note: Discovery screen pending due to generation quota.*
 
 ---
-*Note: These designs serve as visual references for the front-end implementation.*
+*Choose a style set to proceed with implementation.*
