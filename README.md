@@ -53,7 +53,7 @@ GitHub Actions (每天定时触发)
 | 数据库 | SQLite + Litestream | 零运维，自动备份到 R2 |
 | 定时 | GitHub Actions cron | 免费 2000 分钟/月 |
 
-> 架构决策详情见 [doc/architecture-decision.md](doc/architecture-decision.md)
+> 架构决策详情见 [docs/architecture-decision.md](docs/architecture-decision.md)
 
 ## 项目结构
 
@@ -84,7 +84,7 @@ podcast-app/
 │   ├── generate.py             # CLI 入口: python generate.py
 │   ├── pyproject.toml          # uv 项目配置
 │   └── Dockerfile
-├── doc/
+├── docs/
 │   └── architecture-decision.md
 └── .github/
     └── workflows/
