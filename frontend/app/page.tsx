@@ -17,7 +17,7 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
       <h1 className="text-4xl font-bold">Your Podcast</h1>
       <p className="text-lg text-gray-500">
-        每天自动生成的中文科技播客
+        每天自动生成的中文科技播客 🎙️
       </p>
       <div className="flex items-center gap-2 rounded-lg border px-4 py-2">
         <span
