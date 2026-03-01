@@ -125,6 +125,51 @@ cd frontend && vercel                # 前端 → Vercel
 | GLM TTS | ~¥10-30 |
 | **合计** | **~¥10-30/月** |
 
+## 协作工具
+
+| 工具 | 用途 |
+|------|------|
+| **[Notion](https://notion.so)** | 产品文档、需求整理、会议记录 |
+| **微信** | 日常沟通、快速讨论 |
+| **[GitHub Repo](https://github.com/Davie521/your-podcast)** | 代码管理、Issue 任务追踪、Code Review |
+
+### 用 GitHub Issues 管理任务
+
+我们用 GitHub Issues 来拆分和追踪开发任务，好处是任务和代码在同一个地方，方便关联。
+
+**基本用法：**
+
+1. **创建 Issue** — 每个待办任务创建一个 Issue，写清楚要做什么
+2. **打 Label** — 用标签分类，比如 `feature`（新功能）、`bug`（缺陷）、`backend`、`frontend`
+3. **指派 Assignee** — 把 Issue 分配给负责人
+4. **关联 PR** — 提交代码时在 PR 里写 `Closes #123`，合并后自动关闭 Issue
+
+**工作流程：**
+
+```
+1. 在 Issue 中讨论需求 / 任务
+2. 认领 Issue，开新分支开发
+3. 开发完成，提 PR 并关联 Issue（Closes #xx）
+4. Code Review 通过后合并
+5. Issue 自动关闭
+```
+
+**常用命令：**
+
+```bash
+# 查看所有 Issue
+gh issue list
+
+# 创建新 Issue
+gh issue create --title "实现 RSS 抓取服务" --label "feature,backend"
+
+# 查看某个 Issue
+gh issue view 1
+
+# 关闭 Issue
+gh issue close 1
+```
+
 ## License
 
 MIT
