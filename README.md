@@ -27,19 +27,23 @@ GitHub Actions (每天定时触发)
 │    SQLite (元信息)              ffmpeg 合并 MP3     │
 │                                      ↓             │
 │                               上传到 R2 存储        │
+│                                                    │
+│  REST API: /api/episodes, /api/generate ...        │
 └────────────────────────────────────────────────────┘
-         ↓
-  Cloudflare R2 (MP3 全球 CDN)
-         ↓
-  FastAPI Jinja2 (播放页面)
+         ↓                          ↓
+  Cloudflare R2 (MP3 CDN)    Vercel (Next.js 前端)
+                                 - 播客播放器
+                                 - 往期浏览
+                                 - 调用 FastAPI
 ```
 
 ## 技术栈
 
 | 层 | 选型 | 说明 |
 |----|------|------|
-| 云平台 | [Railway](https://railway.com) | CLI 部署，欧洲节点，容器无超时 |
-| 后端 | FastAPI + Jinja2 | 单服务：API + 页面渲染 |
+| 云平台 | [Railway](https://railway.com) | 后端部署，欧洲节点，容器无超时 |
+| 前端 | [Next.js](https://nextjs.org) + [Vercel](https://vercel.com) | 播客播放 & 往期浏览 |
+| 后端 | FastAPI | REST API + 播客生成服务 |
 | RSS | feedparser | 抓取科技/AI 领域源 |
 | 筛选 | Google Gemini | 从全部文章挑 8-10 篇 |
 | 脚本 | [Podcastfy](https://github.com/souzatharsis/podcastfy) | 生成双主持人对话脚本 |
@@ -55,27 +59,31 @@ GitHub Actions (每天定时触发)
 
 ```
 podcast-app/
-├── app/
-│   ├── main.py                 # FastAPI 入口
-│   ├── config.py               # 环境变量配置
-│   ├── models.py               # SQLite 模型 (SQLModel)
-│   ├── services/
-│   │   ├── rss.py              # RSS 抓取
-│   │   ├── gemini.py           # Gemini 筛选
-│   │   ├── podcast.py          # Podcastfy 脚本生成
-│   │   ├── tts.py              # GLM TTS 合成
-│   │   ├── audio.py            # ffmpeg 合并
-│   │   └── storage.py          # R2 上传
-│   ├── templates/
-│   │   ├── base.html           # 布局模板
-│   │   ├── index.html          # 首页 / 播放器
-│   │   └── archive.html        # 往期列表
-│   └── static/
-│       └── player.js           # 播放器 JS
-├── generate.py                 # CLI 入口: python generate.py
-├── requirements.txt
-├── Dockerfile
-├── .env.example
+├── frontend/                   # Next.js (Vercel 部署)
+│   ├── app/
+│   │   ├── page.tsx            # 首页 / 播放器
+│   │   └── archive/
+│   │       └── page.tsx        # 往期列表
+│   ├── components/
+│   │   ├── Player.tsx          # 播放器组件
+│   │   └── EpisodeList.tsx     # 节目列表组件
+│   ├── package.json
+│   └── next.config.js
+├── backend/                    # FastAPI (Railway 部署)
+│   ├── app/
+│   │   ├── main.py             # FastAPI 入口
+│   │   ├── config.py           # 环境变量配置
+│   │   ├── models.py           # SQLite 模型 (SQLModel)
+│   │   └── services/
+│   │       ├── rss.py          # RSS 抓取
+│   │       ├── gemini.py       # Gemini 筛选
+│   │       ├── podcast.py      # Podcastfy 脚本生成
+│   │       ├── tts.py          # GLM TTS 合成
+│   │       ├── audio.py        # ffmpeg 合并
+│   │       └── storage.py      # R2 上传
+│   ├── generate.py             # CLI 入口: python generate.py
+│   ├── requirements.txt
+│   └── Dockerfile
 ├── doc/
 │   └── architecture-decision.md
 └── .github/
@@ -86,26 +94,32 @@ podcast-app/
 ## Quick Start
 
 ```bash
-# 安装依赖
+# 后端
+cd backend
 pip install -r requirements.txt
 cp .env.example .env   # 填入 GEMINI_API_KEY, GLM_API_KEY, R2 配置
-
-# 本地开发
 uvicorn app.main:app --reload
 
+# 前端
+cd frontend
+npm install
+npm run dev
+
 # 生成播客
+cd backend
 python generate.py
 
-# 部署到 Railway
-railway login
-railway up
+# 部署
+railway login && railway up          # 后端 → Railway
+cd frontend && vercel                # 前端 → Vercel
 ```
 
 ## 费用
 
 | 项目 | 月费 |
 |------|------|
-| Railway | ~$0（Hobby 含 $5 免费额度） |
+| Railway (后端) | ~$0（Hobby 含 $5 免费额度） |
+| Vercel (前端) | $0（Hobby 免费） |
 | Cloudflare R2 | $0（10GB 内免费） |
 | Gemini API | $0（免费额度） |
 | GLM TTS | ~¥10-30 |
