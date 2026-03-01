@@ -7,6 +7,7 @@ app = FastAPI(title="Your Podcast API")
 
 origins = [
     "http://localhost:3000",
+    "https://your-podcast.pages.dev",
     os.getenv("FRONTEND_URL", ""),
 ]
 
