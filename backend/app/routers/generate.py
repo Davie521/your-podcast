@@ -9,7 +9,11 @@ from app.config import Settings, get_settings
 from app.database import get_session
 from app.models import Task, TaskStatus, User
 from app.schemas import TaskResponse
-from app.services.pipeline import DEFAULT_FEEDS, run_pipeline
+DEFAULT_FEEDS = [
+    "https://feeds.arstechnica.com/arstechnica/index",
+    "https://www.theverge.com/rss/index.xml",
+    "https://techcrunch.com/feed/",
+]
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
@@ -42,6 +46,7 @@ async def _run_in_background(
 ) -> None:
     """Background task wrapper — opens its own DB session."""
     from app.database import engine
+    from app.services.pipeline import run_pipeline
 
     with Session(engine) as session:
         task = session.exec(select(Task).where(Task.id == task_id)).first()
