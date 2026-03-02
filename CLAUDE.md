@@ -80,6 +80,10 @@ cd frontend && vercel         # 前端
 - 合并后 Railway + Vercel 自动部署
 - **再次强调：绝对不要 `git push origin main`，必须走 PR 流程！**
 
+## Commit 规范
+
+- 提交信息不要加 `Co-Authored-By` 行
+
 ## 注意事项
 
 - 播客生成是长任务（几分钟），后端接口需要异步处理或后台任务

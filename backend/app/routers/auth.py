@@ -1,0 +1,246 @@
+import uuid
+
+import httpx
+from authlib.integrations.starlette_client import OAuth
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
+from sqlmodel import Session, func, select
+
+from app.auth import (
+    SESSION_COOKIE_NAME,
+    SESSION_MAX_AGE,
+    create_session_cookie,
+    get_current_user,
+)
+from app.config import Settings, get_settings
+from app.database import get_session
+from app.models import Episode, User
+
+router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+oauth = OAuth()
+
+
+def _register_oauth(settings: Settings) -> None:
+    """Register OAuth providers lazily (called on first use)."""
+    if "google" not in oauth._clients:
+        oauth.register(
+            name="google",
+            client_id=settings.google_client_id,
+            client_secret=settings.google_client_secret,
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
+        )
+    if "github" not in oauth._clients:
+        oauth.register(
+            name="github",
+            client_id=settings.github_client_id,
+            client_secret=settings.github_client_secret,
+            authorize_url="https://github.com/login/oauth/authorize",
+            access_token_url="https://github.com/login/oauth/access_token",
+            client_kwargs={"scope": "user:email"},
+        )
+
+
+def _set_session_cookie(response: Response, user: User, settings: Settings) -> None:
+    token = create_session_cookie(user.id, settings)
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=SESSION_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+        secure=not settings.frontend_url.startswith("http://localhost"),
+    )
+
+
+def _upsert_user(
+    session: Session,
+    *,
+    email: str,
+    name: str,
+    avatar_url: str,
+    provider: str,
+    provider_id: str,
+) -> User:
+    user = session.exec(select(User).where(User.email == email)).first()
+    if user:
+        user.name = name
+        user.avatar_url = avatar_url
+        # Don't overwrite provider/provider_id on existing users to preserve original identity
+    else:
+        user = User(
+            id=str(uuid.uuid4()),
+            email=email,
+            name=name,
+            avatar_url=avatar_url,
+            provider=provider,
+            provider_id=provider_id,
+        )
+        session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+# ── Google OAuth ──────────────────────────────────────────────
+
+
+@router.get("/google")
+async def google_login(request: Request, settings: Settings = Depends(get_settings)):
+    _register_oauth(settings)
+    redirect_uri = str(request.url_for("google_callback"))
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+@router.get("/google/callback")
+async def google_callback(
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+):
+    _register_oauth(settings)
+    token = await oauth.google.authorize_access_token(request)
+    userinfo = token.get("userinfo", {})
+
+    if not userinfo.get("email_verified"):
+        raise HTTPException(status_code=400, detail="Google email is not verified")
+    email = userinfo.get("email")
+    sub = userinfo.get("sub")
+    if not email or not sub:
+        raise HTTPException(status_code=400, detail="Missing email or sub from Google")
+
+    user = _upsert_user(
+        session,
+        email=email,
+        name=userinfo.get("name", ""),
+        avatar_url=userinfo.get("picture", ""),
+        provider="google",
+        provider_id=str(sub),
+    )
+
+    response = RedirectResponse(url=settings.frontend_url)
+    _set_session_cookie(response, user, settings)
+    return response
+
+
+# ── GitHub OAuth ──────────────────────────────────────────────
+
+
+@router.get("/github")
+async def github_login(request: Request, settings: Settings = Depends(get_settings)):
+    _register_oauth(settings)
+    redirect_uri = str(request.url_for("github_callback"))
+    return await oauth.github.authorize_redirect(request, redirect_uri)
+
+
+@router.get("/github/callback")
+async def github_callback(
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+):
+    _register_oauth(settings)
+    token = await oauth.github.authorize_access_token(request)
+    access_token = token["access_token"]
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://api.github.com/user",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        resp.raise_for_status()
+        gh_user = resp.json()
+
+        # GitHub may not expose email publicly — fetch from emails endpoint
+        email = gh_user.get("email")
+        if not email:
+            resp = await client.get(
+                "https://api.github.com/user/emails",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            resp.raise_for_status()
+            emails = resp.json()
+            # Only trust verified emails
+            verified = [e for e in emails if e.get("verified")]
+            if not verified:
+                raise HTTPException(status_code=400, detail="No verified email found on GitHub account")
+            primary = next((e for e in verified if e.get("primary")), verified[0])
+            email = primary["email"]
+
+    if not gh_user.get("id"):
+        raise HTTPException(status_code=400, detail="Missing user ID from GitHub")
+
+    user = _upsert_user(
+        session,
+        email=email,
+        name=gh_user.get("name") or gh_user.get("login", ""),
+        avatar_url=gh_user.get("avatar_url", ""),
+        provider="github",
+        provider_id=str(gh_user["id"]),
+    )
+
+    response = RedirectResponse(url=settings.frontend_url)
+    _set_session_cookie(response, user, settings)
+    return response
+
+
+# ── User endpoints ────────────────────────────────────────────
+
+
+@router.get("/me")
+async def me(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    public_count = session.exec(
+        select(func.count()).where(Episode.creator_id == current_user.id, Episode.is_public == True)  # noqa: E712
+    ).one()
+    total_count = session.exec(
+        select(func.count()).where(Episode.creator_id == current_user.id)
+    ).one()
+
+    return {
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "avatar_url": current_user.avatar_url,
+        "interests": current_user.interests,
+        "created_at": current_user.created_at.isoformat(),
+        "stats": {
+            "total_episodes": total_count,
+            "public_episodes": public_count,
+        },
+    }
+
+
+# ── Dev-only login (bypasses OAuth for local testing) ─────────
+@router.post("/dev-login")
+async def dev_login(
+    response: Response,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+):
+    """Log in as the seed user without OAuth. Only works when session_secret is
+    the default value (i.e. local dev without a real secret configured)."""
+    if settings.session_secret != "change-me":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    user = session.exec(select(User).where(User.email == "seed@your-podcast.local")).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Seed user not found. Run: python seed.py")
+
+    _set_session_cookie(response, user, settings)
+    return {"ok": True, "user": user.name, "email": user.email}
+
+
+@router.post("/logout")
+async def logout(settings: Settings = Depends(get_settings)):
+    response = Response(content='{"ok": true}', media_type="application/json")
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        httponly=True,
+        samesite="lax",
+        secure=not settings.frontend_url.startswith("http://localhost"),
+    )
+    return response
