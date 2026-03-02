@@ -33,7 +33,7 @@ async def synthesize_lines(lines: list[ScriptLine], settings: Settings) -> list[
             for i, line in enumerate(lines)
         ]
         return list(await asyncio.gather(*tasks))
-    elif settings.tts_provider == "google":
+    if settings.tts_provider == "google":
         voice_map = {
             "Alex": settings.google_tts_voice_male,
             "Jordan": settings.google_tts_voice_female,
@@ -52,48 +52,7 @@ async def synthesize_lines(lines: list[ScriptLine], settings: Settings) -> list[
                 )
 
         return list(await asyncio.gather(*[_run(i, line) for i, line in enumerate(lines)]))
-    else:
-        from zai import ZhipuAiClient
-
-        client = ZhipuAiClient(api_key=settings.glm_api_key)
-        voice_map = {
-            "Alex": settings.tts_voice_male,
-            "Jordan": settings.tts_voice_female,
-        }
-        tasks = [
-            asyncio.to_thread(_synthesize_glm, client, line, voice_map, i)
-            for i, line in enumerate(lines)
-        ]
-        return list(await asyncio.gather(*tasks))
-
-
-def _synthesize_glm(
-    client,
-    line: ScriptLine,
-    voice_map: dict[str, str],
-    index: int,
-) -> Path:
-    """Synthesize a single line with GLM TTS."""
-    voice = voice_map.get(line["speaker"], voice_map["Alex"])
-    tmp = Path(tempfile.mktemp(suffix=".wav", prefix=f"tts_{index:03d}_"))
-
-    for attempt in range(1, _MAX_RETRIES + 1):
-        try:
-            response = client.audio.speech(
-                model="glm-tts",
-                input=line["text"],
-                voice=voice,
-                response_format="wav",
-            )
-            response.stream_to_file(tmp)
-            logger.debug("GLM TTS line %d done (attempt %d)", index, attempt)
-            return tmp
-        except Exception:
-            logger.warning("GLM TTS line %d attempt %d failed", index, attempt, exc_info=True)
-            if attempt == _MAX_RETRIES:
-                raise
-
-    raise RuntimeError("unreachable")
+    raise ValueError(f"Unknown TTS provider: {settings.tts_provider!r}")
 
 
 def _synthesize_google(

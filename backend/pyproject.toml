@@ -19,7 +19,6 @@ dependencies = [
     "podcastfy>=0.3",
     "playwright>=1.40",
     "google-genai>=1.0",
-    "zai-sdk>=0.2",
     "boto3>=1.35",
     "pydub>=0.25",
     # Utilities

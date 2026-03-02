@@ -22,13 +22,8 @@ class Settings(BaseSettings):
     # Google Gemini
     gemini_api_key: str = ""
 
-    # TTS provider: "glm", "google", or "inworld"
+    # TTS provider: "google" or "inworld"
     tts_provider: str = "inworld"
-
-    # GLM (智谱) TTS
-    glm_api_key: str = ""
-    tts_voice_male: str = "male"
-    tts_voice_female: str = "female"
 
     # Google TTS (via Gemini)
     google_tts_model: str = "gemini-2.5-flash-preview-tts"
