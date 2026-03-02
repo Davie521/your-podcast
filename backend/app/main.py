@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -30,7 +31,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 origins = [
     "http://localhost:3000",
     "https://your-podcast.pages.dev",
-    settings.frontend_url,
+    os.getenv("FRONTEND_URL", ""),
 ]
 
 app.add_middleware(
