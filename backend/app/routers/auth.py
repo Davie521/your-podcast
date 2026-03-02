@@ -214,6 +214,26 @@ async def me(
     }
 
 
+# ── Dev-only login (bypasses OAuth for local testing) ─────────
+@router.post("/dev-login")
+async def dev_login(
+    response: Response,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+):
+    """Log in as the seed user without OAuth. Only works when session_secret is
+    the default value (i.e. local dev without a real secret configured)."""
+    if settings.session_secret != "change-me":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    user = session.exec(select(User).where(User.email == "seed@your-podcast.local")).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Seed user not found. Run: python seed.py")
+
+    _set_session_cookie(response, user, settings)
+    return {"ok": True, "user": user.name, "email": user.email}
+
+
 @router.post("/logout")
 async def logout(settings: Settings = Depends(get_settings)):
     response = Response(content='{"ok": true}', media_type="application/json")
