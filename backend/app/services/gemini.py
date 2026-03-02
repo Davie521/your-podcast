@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 
-import google.generativeai as genai
+from google import genai
 
 from app.services.rss import Article
 
@@ -32,8 +32,7 @@ async def filter_articles(
 def _call_gemini(
     articles: list[Article], interests: list[str], api_key: str
 ) -> list[Article]:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(_MODEL_NAME)
+    client = genai.Client(api_key=api_key)
 
     articles_json = json.dumps(
         [{"index": i, "title": a["title"], "summary": a["summary"]} for i, a in enumerate(articles)],
@@ -50,7 +49,7 @@ def _call_gemini(
         "Do not output any other text."
     )
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model=_MODEL_NAME, contents=prompt)
     text = response.text.strip()
 
     # Strip markdown code fences if present
