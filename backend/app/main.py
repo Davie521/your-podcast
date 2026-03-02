@@ -37,6 +37,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in origins if o],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):3000" if settings.session_secret == "change-me" else None,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
