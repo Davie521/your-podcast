@@ -32,7 +32,7 @@ Each card is full-width, horizontal layout:
 ┌─────────────────────────────────────────────────┐
 │ ┌────────┐                                      │
 │ │        │  Title (bold, 1 line, truncate)       │
-│ │ Cover  │  Series Name · Author                 │
+│ │ Cover  │  Author Name                          │
 │ │ Image  │  Mar 1, 2026 · 6 min                  │
 │ │ (1:1)  │                                       │
 │ │        │                        [ ▶ ] (circle) │
@@ -42,7 +42,7 @@ Each card is full-width, horizontal layout:
 
 - **Cover image**: square, rounded corners (8px), left-aligned, ~80x80px on mobile
 - **Title**: bold, single line, ellipsis overflow
-- **Series name + author**: secondary text, gray, single line. Format: "Series Name · Author Name"
+- **Author**: secondary text, gray, single line
 - **Date + duration**: tertiary text, lighter gray. Format: "Mar 1, 2026 · 6 min"
 - **Play button**: circle button on the right side, vertically centered. Tapping plays/pauses the episode and shows the mini player. Does not navigate away.
 - **Card tap** (anywhere except play button): navigates to Episode Detail page.
@@ -53,13 +53,13 @@ Each card is full-width, horizontal layout:
 ### Mock Data (5-6 episodes)
 
 Use Chinese titles and descriptions to match the product:
-- "科技早报 — 2026年3月1日", series "每日科技", author "Albert", 6 min
-- "AI 周报 第9期", series "AI Weekly", author "Dave", 12 min
-- "Apple Vision Pro 2 深度解析", series "每日科技", author "Albert", 8 min
-- "创业者访谈：从零到一", series "创业故事", author "Sarah", 15 min
-- "芯片战争最新动态", series "每日科技", author "Dave", 5 min
+- "科技早报 — 2026年3月1日", author "Albert", 6 min
+- "AI 周报 第9期", author "Dave", 12 min
+- "Apple Vision Pro 2 深度解析", author "Albert", 8 min
+- "创业者访谈：从零到一", author "Sarah", 15 min
+- "芯片战争最新动态", author "Dave", 5 min
 
-Cover images: use placeholder colored squares (different colors per series) or https://placehold.co/200x200 with different colors.
+Cover images: use placeholder colored squares or https://placehold.co/200x200 with different colors per episode.
 
 ---
 
@@ -167,7 +167,7 @@ Full-screen player page, inspired by Spotify / Apple Podcasts "Now Playing" scre
 │        └──────────────────┘          │
 │                                      │
 │  Title (bold, large, 2 lines max)    │
-│  Series Name · Author               │
+│  Author Name                         │
 │                                      │
 │  ──────────●───────────── 2:30/6:00  │
 │                                      │
@@ -195,7 +195,7 @@ Full-screen player page, inspired by Spotify / Apple Podcasts "Now Playing" scre
 - **Back button**: top-left, navigates back. No bottom tab bar on this page — full immersive view.
 - **Cover image**: large square, centered, rounded corners (16px), ~70% of screen width.
 - **Title**: bold, large font, below the image. Max 2 lines.
-- **Series + author**: secondary gray text.
+- **Author**: secondary gray text.
 - **Progress bar**: seekable (draggable thumb). Shows current time and total duration on the sides.
 - **Playback controls**: centered row of three buttons:
   - Skip back 15s (small)

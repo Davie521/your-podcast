@@ -29,6 +29,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
 origins = [
     "http://localhost:3000",
+    "https://your-podcast.pages.dev",
     settings.frontend_url,
 ]
 
