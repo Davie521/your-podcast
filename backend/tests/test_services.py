@@ -241,9 +241,9 @@ class TestPodcast:
         """)
         lines = _parse_transcript(text)
         assert len(lines) == 3
-        assert lines[0] == ScriptLine(speaker="小明", text="大家好，欢迎收听")
-        assert lines[1] == ScriptLine(speaker="小红", text="今天聊点科技新闻")
-        assert lines[2] == ScriptLine(speaker="小明", text="第一个话题是 AI")
+        assert lines[0] == ScriptLine(speaker="Alex", text="大家好，欢迎收听")
+        assert lines[1] == ScriptLine(speaker="Jordan", text="今天聊点科技新闻")
+        assert lines[2] == ScriptLine(speaker="Alex", text="第一个话题是 AI")
 
     def test_parse_transcript_multiline_content(self):
         """Tags with multiline content are parsed correctly."""
@@ -257,7 +257,7 @@ class TestPodcast:
         text = "<Person1></Person1>\n<Person2>有内容</Person2>"
         lines = _parse_transcript(text)
         assert len(lines) == 1
-        assert lines[0]["speaker"] == "小红"
+        assert lines[0]["speaker"] == "Jordan"
 
     def test_parse_transcript_empty_input(self):
         lines = _parse_transcript("")
@@ -293,8 +293,8 @@ class TestPodcast:
             lines = await generate_script(articles, "fake-key")
 
         assert len(lines) == 2
-        assert lines[0]["speaker"] == "小明"
-        assert lines[1]["speaker"] == "小红"
+        assert lines[0]["speaker"] == "Alex"
+        assert lines[1]["speaker"] == "Jordan"
 
     @pytest.mark.anyio
     async def test_generate_script_podcastfy_failure(self):
@@ -316,8 +316,8 @@ class TestTTS:
         mock_client = MagicMock()
         mock_client.audio.speech.create.return_value = mock_response
 
-        line = ScriptLine(speaker="小明", text="测试文本")
-        voice_map = {"小明": "male-voice", "小红": "female-voice"}
+        line = ScriptLine(speaker="Alex", text="测试文本")
+        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
 
         path = _synthesize_one(mock_client, line, voice_map, 0)
 
@@ -328,13 +328,13 @@ class TestTTS:
         assert str(path).endswith(".wav")
 
     def test_synthesize_one_uses_female_voice(self):
-        """小红 lines use the female voice."""
+        """Jordan lines use the female voice."""
         mock_response = MagicMock()
         mock_client = MagicMock()
         mock_client.audio.speech.create.return_value = mock_response
 
-        line = ScriptLine(speaker="小红", text="你好")
-        voice_map = {"小明": "male-voice", "小红": "female-voice"}
+        line = ScriptLine(speaker="Jordan", text="你好")
+        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
 
         _synthesize_one(mock_client, line, voice_map, 0)
 
@@ -352,8 +352,8 @@ class TestTTS:
             mock_response,
         ]
 
-        line = ScriptLine(speaker="小明", text="重试测试")
-        voice_map = {"小明": "male-voice", "小红": "female-voice"}
+        line = ScriptLine(speaker="Alex", text="重试测试")
+        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
 
         path = _synthesize_one(mock_client, line, voice_map, 0)
         assert mock_client.audio.speech.create.call_count == 3
@@ -364,8 +364,8 @@ class TestTTS:
         mock_client = MagicMock()
         mock_client.audio.speech.create.side_effect = RuntimeError("always fails")
 
-        line = ScriptLine(speaker="小明", text="失败")
-        voice_map = {"小明": "male-voice", "小红": "female-voice"}
+        line = ScriptLine(speaker="Alex", text="失败")
+        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
 
         with pytest.raises(RuntimeError, match="always fails"):
             _synthesize_one(mock_client, line, voice_map, 0)
@@ -376,8 +376,8 @@ class TestTTS:
         """synthesize_lines creates tasks for each line with correct voices."""
         settings = _test_settings()
         lines = [
-            ScriptLine(speaker="小明", text="你好"),
-            ScriptLine(speaker="小红", text="大家好"),
+            ScriptLine(speaker="Alex", text="你好"),
+            ScriptLine(speaker="Jordan", text="大家好"),
         ]
 
         mock_response = MagicMock()

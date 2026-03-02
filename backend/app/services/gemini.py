@@ -39,15 +39,15 @@ def _call_gemini(
         [{"index": i, "title": a["title"], "summary": a["summary"]} for i, a in enumerate(articles)],
         ensure_ascii=False,
     )
-    interests_str = ", ".join(interests) if interests else "科技, 互联网"
+    interests_str = ", ".join(interests) if interests else "technology, internet"
 
     prompt = (
-        "你是一个科技播客编辑。下面是今天抓取到的文章列表（JSON），以及用户感兴趣的领域。\n"
-        f"用户兴趣: {interests_str}\n"
-        f"文章列表:\n{articles_json}\n\n"
-        f"请从中挑选最多 {_MAX_ARTICLES} 篇与用户兴趣最相关、最值得讨论的文章。\n"
-        "只返回一个 JSON 数组，包含你选中文章的 index 数字，例如 [0, 3, 5]。\n"
-        "不要输出任何其他文字。"
+        "You are a tech podcast editor. Below is a list of articles (JSON) fetched today and the user's interests.\n"
+        f"User interests: {interests_str}\n"
+        f"Articles:\n{articles_json}\n\n"
+        f"Pick up to {_MAX_ARTICLES} articles that are most relevant to the user's interests and worth discussing.\n"
+        "Return ONLY a JSON array of the selected article index numbers, e.g. [0, 3, 5].\n"
+        "Do not output any other text."
     )
 
     response = model.generate_content(prompt)

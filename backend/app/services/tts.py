@@ -17,8 +17,8 @@ async def synthesize_lines(lines: list[ScriptLine], settings: Settings) -> list[
     """Synthesize each script line to a WAV file via GLM TTS."""
     client = ZhipuAI(api_key=settings.glm_api_key)
     voice_map = {
-        "小明": settings.tts_voice_male,
-        "小红": settings.tts_voice_female,
+        "Alex": settings.tts_voice_male,
+        "Jordan": settings.tts_voice_female,
     }
 
     tasks = [
@@ -35,7 +35,7 @@ def _synthesize_one(
     index: int,
 ) -> Path:
     """Synthesize a single line with retry logic."""
-    voice = voice_map.get(line["speaker"], voice_map["小明"])
+    voice = voice_map.get(line["speaker"], voice_map["Alex"])
     tmp = Path(tempfile.mktemp(suffix=".wav", prefix=f"tts_{index:03d}_"))
 
     for attempt in range(1, _MAX_RETRIES + 1):

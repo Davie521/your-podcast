@@ -16,9 +16,9 @@ from app.services import audio, cover, gemini, podcast, rss, storage, tts
 logger = logging.getLogger(__name__)
 
 DEFAULT_FEEDS = [
-    "https://36kr.com/feed",
-    "https://sspai.com/feed",
-    "https://www.ifanr.com/feed",
+    "https://feeds.arstechnica.com/arstechnica/index",
+    "https://www.theverge.com/rss/index.xml",
+    "https://techcrunch.com/feed/",
 ]
 
 
@@ -134,7 +134,7 @@ async def _run_pipeline_inner(
 
     # Step 8: Save to database
     _update_task(session, task, "saving")
-    description = "、".join(a["title"] for a in filtered[:5])
+    description = ", ".join(a["title"] for a in filtered[:5])
     episode = Episode(
         id=str(uuid.uuid4()),
         title=title,
