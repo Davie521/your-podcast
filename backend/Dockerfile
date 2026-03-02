@@ -1,18 +1,7 @@
 FROM python:3.12-slim
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+RUN pip install --no-cache-dir fastapi uvicorn
 
 WORKDIR /app
 
-ENV UV_COMPILE_BYTECODE=1
-ENV UV_LINK_MODE=copy
-
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
-
-COPY . /app
-RUN uv sync --frozen --no-dev
-
-ENV PATH="/app/.venv/bin:$PATH"
-
-CMD ["sh", "-c", "mkdir -p data && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["python", "-c", "from http.server import HTTPServer, BaseHTTPRequestHandler; import os; port=int(os.environ.get('PORT',8000)); print(f'Starting on {port}'); HTTPServer(('0.0.0.0',port), BaseHTTPRequestHandler).serve_forever()"]
