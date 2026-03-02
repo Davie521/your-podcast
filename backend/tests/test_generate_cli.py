@@ -31,7 +31,7 @@ class TestGetOrCreateSystemUser:
 
     def test_system_user_has_default_interests(self, engine, session):
         user = get_or_create_system_user(session)
-        assert "科技" in user.interests
+        assert "technology" in user.interests
         assert "AI" in user.interests
 
 

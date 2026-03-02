@@ -51,7 +51,7 @@ def get_or_create_system_user(session: Session) -> User:
         email=system_email,
         provider="system",
         provider_id="system",
-        interests=["科技", "互联网", "AI", "编程"],
+        interests=["technology", "internet", "AI", "programming"],
     )
     session.add(user)
     session.commit()

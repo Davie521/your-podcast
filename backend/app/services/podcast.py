@@ -9,12 +9,12 @@ from app.services.rss import Article
 
 logger = logging.getLogger(__name__)
 
-_SPEAKER_MAP = {"Person1": "小明", "Person2": "小红"}
+_SPEAKER_MAP = {"Person1": "Alex", "Person2": "Jordan"}
 _TAG_PATTERN = re.compile(r"<(Person[12])>(.*?)</\1>", re.DOTALL)
 
 
 class ScriptLine(TypedDict):
-    speaker: str  # "小明" or "小红"
+    speaker: str  # "Alex" or "Jordan"
     text: str
 
 
@@ -30,8 +30,8 @@ _CONVERSATION_CONFIG = {
         "Conclusion",
     ],
     "podcast_name": "Your Podcast",
-    "podcast_tagline": "每日中文科技播客",
-    "output_language": "Chinese",
+    "podcast_tagline": "Your daily tech podcast",
+    "output_language": "English",
     "engagement_techniques": [
         "rhetorical questions",
         "anecdotes",
@@ -43,11 +43,11 @@ _CONVERSATION_CONFIG = {
 
 
 async def generate_script(articles: list[Article], api_key: str) -> list[ScriptLine]:
-    """Generate a two-host Chinese podcast dialogue script via Podcastfy.
+    """Generate a two-host English podcast dialogue script via Podcastfy.
 
     Uses Podcastfy in transcript-only mode to generate a dialogue from
     article URLs, then parses the <Person1>/<Person2> tags into ScriptLines
-    with 小明/小红 speaker names.
+    with Alex/Jordan speaker names.
     """
     if not articles:
         return []
@@ -90,7 +90,7 @@ def _parse_transcript(text: str) -> list[ScriptLine]:
     lines: list[ScriptLine] = []
     for match in _TAG_PATTERN.finditer(text):
         tag, content = match.group(1), match.group(2).strip()
-        speaker = _SPEAKER_MAP.get(tag, "小明")
+        speaker = _SPEAKER_MAP.get(tag, "Alex")
         if content:
             lines.append(ScriptLine(speaker=speaker, text=content))
     return lines
