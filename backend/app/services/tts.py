@@ -40,10 +40,12 @@ def _synthesize_one(
 
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
-            response = client.audio.speech.create(
+            response = client.audio.speech(
                 model="glm-tts",
-                voice=voice,
                 input=line["text"],
+                voice=voice,
+                response_format="wav",
+                encode_format="raw",
             )
             response.stream_to_file(tmp)
             logger.debug("TTS line %d done (attempt %d)", index, attempt)

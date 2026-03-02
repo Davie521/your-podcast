@@ -8,7 +8,7 @@ from app.services.rss import Article
 
 logger = logging.getLogger(__name__)
 
-_MODEL_NAME = "gemini-1.5-flash"
+_MODEL_NAME = "gemini-2.5-flash"
 _MAX_ARTICLES = 8
 
 
