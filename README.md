@@ -130,6 +130,15 @@ npm run dev
    ```
 3. 设置环境变量 `NEXT_PUBLIC_API_URL` 为 Railway 后端 URL
 
+## CI/CD
+
+| 事件 | 发生什么 |
+|------|---------|
+| PR 到 main | CI 检查（lint/build/import）+ Vercel Preview 部署 |
+| 合并到 main | Vercel Production 部署 + Railway 自动重新构建 |
+
+> 详见 [docs/cicd-overview.md](docs/cicd-overview.md)
+
 ## 费用
 
 | 项目 | 月费 |
