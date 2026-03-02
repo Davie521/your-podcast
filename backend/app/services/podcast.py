@@ -45,19 +45,17 @@ _CONVERSATION_CONFIG = {
 async def generate_script(articles: list[Article], api_key: str) -> list[ScriptLine]:
     """Generate a two-host English podcast dialogue script via Podcastfy.
 
-    Uses Podcastfy in transcript-only mode to generate a dialogue from
-    article URLs, then parses the <Person1>/<Person2> tags into ScriptLines
+    Passes article summaries as raw text to Podcastfy (avoids Playwright
+    scraping), then parses the <Person1>/<Person2> tags into ScriptLines
     with Alex/Jordan speaker names.
     """
     if not articles:
         return []
 
-    urls = [a["url"] for a in articles if a.get("url")]
-    if not urls:
-        return []
+    text = _build_article_text(articles)
 
     transcript_path = await asyncio.to_thread(
-        _generate_transcript, urls, api_key
+        _generate_transcript, text, api_key
     )
     if not transcript_path:
         return []
@@ -68,14 +66,26 @@ async def generate_script(articles: list[Article], api_key: str) -> list[ScriptL
     return _parse_transcript(transcript_text)
 
 
-def _generate_transcript(urls: list[str], api_key: str) -> str | None:
+def _build_article_text(articles: list[Article]) -> str:
+    """Format articles into a single text block for Podcastfy."""
+    parts = []
+    for i, a in enumerate(articles, 1):
+        parts.append(f"Article {i}: {a['title']}")
+        parts.append(f"Source: {a.get('source', 'Unknown')}")
+        if a.get("summary"):
+            parts.append(f"Summary: {a['summary']}")
+        parts.append("")
+    return "\n".join(parts)
+
+
+def _generate_transcript(text: str, api_key: str) -> str | None:
     """Call Podcastfy to generate a transcript file (sync, run via to_thread)."""
     try:
         import os
         os.environ["GEMINI_API_KEY"] = api_key
 
         result = generate_podcast(
-            urls=urls,
+            text=text,
             transcript_only=True,
             conversation_config=_CONVERSATION_CONFIG,
         )
