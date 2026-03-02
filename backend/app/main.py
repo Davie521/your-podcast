@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import get_settings
 from app.database import create_db_and_tables
 from app.models import Episode, Source, Task, TranscriptLine, User  # noqa: F401 — register tables
-from app.routers import auth, onboarding
+from app.routers import auth, episodes, onboarding
 
 
 @asynccontextmanager
@@ -38,6 +38,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(onboarding.router)
+app.include_router(episodes.router)
 
 
 @app.get("/api/health")
