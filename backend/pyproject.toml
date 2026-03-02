@@ -16,6 +16,8 @@ dependencies = [
     "itsdangerous>=2.1",
     # Services
     "feedparser>=6.0",
+    "podcastfy>=0.3",
+    "playwright>=1.40",
     "google-generativeai>=0.8",
     "zhipuai>=2.1",
     "boto3>=1.35",
