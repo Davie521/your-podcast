@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     tts_voice_male: str = "male"
     tts_voice_female: str = "female"
 
+    # RSS Feeds (comma-separated URLs)
+    rss_feeds: str = ""
+
     # Cloudflare R2
     r2_account_id: str = ""
     r2_access_key_id: str = ""
