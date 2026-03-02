@@ -7,7 +7,7 @@ app = FastAPI(title="Your Podcast API")
 
 origins = [
     "http://localhost:3000",
-    "https://your-podcast.pages.dev",
+    "https://your-podcast.vercel.app",
     os.getenv("FRONTEND_URL", ""),
 ]
 
