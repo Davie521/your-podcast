@@ -24,6 +24,8 @@ class Settings(BaseSettings):
 
     # GLM (智谱) TTS
     glm_api_key: str = ""
+    tts_voice_male: str = "male"
+    tts_voice_female: str = "female"
 
     # Cloudflare R2
     r2_account_id: str = ""
