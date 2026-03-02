@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import re
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import TypedDict
 
 from podcastfy.client import generate_podcast
@@ -89,6 +91,13 @@ def _generate_transcript(text: str, api_key: str) -> str | None:
             transcript_only=True,
             conversation_config=_CONVERSATION_CONFIG,
         )
+        if result:
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            original_stem = Path(result).stem  # e.g. "transcript_abc123"
+            original_hash = original_stem.split("_", 1)[-1]
+            new_path = Path(result).parent / f"transcript_{ts}_{original_hash}.txt"
+            Path(result).rename(new_path)
+            return str(new_path)
         return result
     except Exception:
         logger.exception("Podcastfy transcript generation failed")
