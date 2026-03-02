@@ -3,7 +3,7 @@ import logging
 import tempfile
 from pathlib import Path
 
-from zhipuai import ZhipuAI
+from zai import ZhipuAiClient
 
 from app.config import Settings
 from app.services.podcast import ScriptLine
@@ -15,7 +15,7 @@ _MAX_RETRIES = 3
 
 async def synthesize_lines(lines: list[ScriptLine], settings: Settings) -> list[Path]:
     """Synthesize each script line to a WAV file via GLM TTS."""
-    client = ZhipuAI(api_key=settings.glm_api_key)
+    client = ZhipuAiClient(api_key=settings.glm_api_key)
     voice_map = {
         "Alex": settings.tts_voice_male,
         "Jordan": settings.tts_voice_female,
@@ -29,7 +29,7 @@ async def synthesize_lines(lines: list[ScriptLine], settings: Settings) -> list[
 
 
 def _synthesize_one(
-    client: ZhipuAI,
+    client: ZhipuAiClient,
     line: ScriptLine,
     voice_map: dict[str, str],
     index: int,
@@ -45,7 +45,6 @@ def _synthesize_one(
                 input=line["text"],
                 voice=voice,
                 response_format="wav",
-                encode_format="raw",
             )
             response.stream_to_file(tmp)
             logger.debug("TTS line %d done (attempt %d)", index, attempt)
