@@ -1,9 +1,12 @@
 import asyncio
 import logging
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 from pydub import AudioSegment
+
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +25,12 @@ def _merge(audio_files: list[Path]) -> tuple[Path, int]:
         segment = AudioSegment.from_file(str(path))
         combined += segment
 
-    out_path = Path(tempfile.mktemp(suffix=".mp3", prefix="podcast_"))
+    if get_settings().dev_mode:
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        out_path = Path.cwd() / f"podcast_{ts}.mp3"
+    else:
+        out_path = Path(tempfile.mktemp(suffix=".mp3", prefix="podcast_"))
+
     combined.export(str(out_path), format="mp3")
     duration_seconds = int(len(combined) / 1000)
 
