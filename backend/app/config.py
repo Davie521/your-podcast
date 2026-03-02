@@ -22,10 +22,27 @@ class Settings(BaseSettings):
     # Google Gemini
     gemini_api_key: str = ""
 
+    # TTS provider: "glm", "google", or "inworld"
+    tts_provider: str = "inworld"
+
     # GLM (智谱) TTS
     glm_api_key: str = ""
     tts_voice_male: str = "male"
     tts_voice_female: str = "female"
+
+    # Google TTS (via Gemini)
+    google_tts_model: str = "gemini-2.5-flash-preview-tts"
+    google_tts_voice_male: str = "Puck"
+    google_tts_voice_female: str = "Aoede"
+
+    # Inworld TTS (direct API — https://inworld.ai)
+    inworld_api_key: str = ""
+    inworld_tts_model: str = "inworld-tts-1.5-max"
+    inworld_tts_voice_male: str = "Theodore"
+    inworld_tts_voice_female: str = "Sarah"
+
+    # Dev mode — saves MP3 to current directory instead of temp
+    dev_mode: bool = False
 
     # RSS Feeds (comma-separated URLs)
     rss_feeds: str = ""
