@@ -1,5 +1,17 @@
 import pytest
 
+from app.routers.onboarding import CATEGORIES
+
+
+# ── Categories ─────────────────────────────────────────────────
+
+
+@pytest.mark.anyio
+async def test_get_categories(client):
+    resp = await client.get("/api/onboarding/categories")
+    assert resp.status_code == 200
+    assert resp.json()["categories"] == CATEGORIES
+
 
 # ── Auth guard ──────────────────────────────────────────────────
 

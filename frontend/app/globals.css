@@ -10,13 +10,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-serif: var(--font-libre-baskerville);
+  --font-inter: var(--font-inter);
+  --color-cream: #fdfdf5;
+  --color-border-warm: #e0e0d8;
 }
 
 body {

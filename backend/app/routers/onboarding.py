@@ -8,6 +8,19 @@ from app.models import User
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
+CATEGORIES: list[str] = [
+    "Arts & Culture",
+    "Business",
+    "Lifestyle",
+    "Music",
+    "Thought & Ideas",
+]
+
+
+@router.get("/categories")
+async def get_categories():
+    return {"categories": CATEGORIES}
+
 
 class InterestsBody(BaseModel):
     interests: list[str]
