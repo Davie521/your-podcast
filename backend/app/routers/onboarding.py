@@ -8,13 +8,13 @@ from app.models import User
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
-CATEGORIES: list[str] = [
+CATEGORIES: tuple[str, ...] = (
     "Arts & Culture",
     "Business",
     "Lifestyle",
     "Music",
     "Thought & Ideas",
-]
+)
 
 
 @router.get("/categories")

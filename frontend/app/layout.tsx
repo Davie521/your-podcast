@@ -20,7 +20,7 @@ const libreBaskerville = Libre_Baskerville({
 });
 
 const inter = Inter({
-  variable: "--font-inter",
+  variable: "--font-inter-var",
   subsets: ["latin"],
 });
 

@@ -10,7 +10,7 @@ from app.routers.onboarding import CATEGORIES
 async def test_get_categories(client):
     resp = await client.get("/api/onboarding/categories")
     assert resp.status_code == 200
-    assert resp.json()["categories"] == CATEGORIES
+    assert resp.json()["categories"] == list(CATEGORIES)
 
 
 # ── Auth guard ──────────────────────────────────────────────────
