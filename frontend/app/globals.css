@@ -8,11 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-cream: #fdfdf5;
-  --color-border-warm: #e0e0d8;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-libre-baskerville);
 }
 
 @media (prefers-color-scheme: dark) {
