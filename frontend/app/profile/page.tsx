@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { BottomNav } from '@/components/BottomNav';
 
 interface FavoriteEpisode {
@@ -82,7 +83,7 @@ export default function ProfilePage() {
       <main className="mx-auto w-full max-w-[428px] pb-24">
         {/* Settings button */}
         <div className="flex justify-end px-6 pt-4">
-          <button type="button" aria-label="Settings" className="p-2 text-[#111]">
+          <Link href="/settings" aria-label="Settings" className="p-2 text-[#111]">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
               <path
                 d="M11 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
@@ -99,7 +100,7 @@ export default function ProfilePage() {
                 strokeLinejoin="round"
               />
             </svg>
-          </button>
+          </Link>
         </div>
 
         {/* Avatar + name */}
