@@ -23,11 +23,14 @@ export default function InterestsPage() {
   const [categories, setCategories] = useState<readonly string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    request<CategoriesResponse>("/api/onboarding/categories").then((data) =>
-      setCategories(data.categories),
-    );
+    request<CategoriesResponse>("/api/onboarding/categories").catch(() => {
+      setError("Failed to load categories");
+    }).then((data) => {
+      if (data) setCategories(data.categories);
+    });
   }, []);
 
   function toggle(category: string) {
@@ -40,14 +43,17 @@ export default function InterestsPage() {
   }
 
   async function handleSubmit() {
-    if (submitting) return;
+    if (submitting || selected.size === 0) return;
     setSubmitting(true);
+    setError(null);
     try {
       await request("/api/onboarding/interests", {
         method: "POST",
         body: JSON.stringify({ interests: [...selected] }),
       });
       router.push("/");
+    } catch {
+      setError("Please sign in to save your interests");
     } finally {
       setSubmitting(false);
     }
@@ -138,11 +144,16 @@ export default function InterestsPage() {
         </div>
       </div>
 
+      {/* Error */}
+      {error && (
+        <p className="text-center text-sm text-red-600 mb-2 px-8">{error}</p>
+      )}
+
       {/* Bottom CTA */}
       <div className="h-[129px] bg-[rgba(253,253,245,0.9)] border-t border-border-warm shadow-[0px_-4px_30px_rgba(0,0,0,0.03)] pt-[33px] px-8 shrink-0">
         <button
           type="button"
-          disabled={submitting}
+          disabled={submitting || selected.size === 0}
           onClick={handleSubmit}
           className="bg-black rounded-full h-16 w-full shadow-[0px_25px_50px_rgba(0,0,0,0.2)] flex items-center justify-center disabled:opacity-50"
         >
