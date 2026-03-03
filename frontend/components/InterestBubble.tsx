@@ -15,6 +15,7 @@ export function InterestBubble({
     <button
       type="button"
       onClick={onToggle}
+      aria-pressed={isSelected}
       style={{ width: size, height: size }}
       className={`rounded-full border border-border-warm shadow-[0px_10px_15px_rgba(0,0,0,0.1),0px_4px_6px_rgba(0,0,0,0.1)] flex flex-col gap-2 items-center justify-center transition-colors ${
         isSelected ? "bg-black text-white" : "bg-white text-[#111]"
@@ -24,6 +25,7 @@ export function InterestBubble({
         {label}
       </span>
       <div
+        aria-hidden="true"
         className={`h-1 w-4 rounded-full ${
           isSelected ? "bg-white/20" : "bg-[#111]/20"
         }`}

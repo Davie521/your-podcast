@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { request } from "@/lib/api";
+import { ApiError, request } from "@/lib/api";
 import { ChevronLeftIcon } from "@/components/icons/ChevronLeftIcon";
 import { StepDots } from "@/components/StepDots";
 import { InterestBubble } from "@/components/InterestBubble";
-import type { CategoriesResponse } from "@/types/onboarding";
+import type { CategoriesResponse, InterestsResponse } from "@/types/onboarding";
 
 const BUBBLE_LAYOUT: Record<string, { size: number; left: number; top: number }> = {
   "Arts & Culture": { size: 150, left: 40, top: 0 },
@@ -22,15 +22,21 @@ export default function InterestsPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<readonly string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [submitting, setSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    request<CategoriesResponse>("/api/onboarding/categories").catch(() => {
-      setError("Failed to load categories");
-    }).then((data) => {
-      if (data) setCategories(data.categories);
-    });
+    const controller = new AbortController();
+    request<CategoriesResponse>("/api/onboarding/categories", {
+      signal: controller.signal,
+    })
+      .then((data) => setCategories(data.categories))
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError("Failed to load categories");
+        }
+      });
+    return () => controller.abort();
   }, []);
 
   function toggle(category: string) {
@@ -43,19 +49,23 @@ export default function InterestsPage() {
   }
 
   async function handleSubmit() {
-    if (submitting || selected.size === 0) return;
-    setSubmitting(true);
+    if (isSubmitting || selected.size === 0) return;
+    setIsSubmitting(true);
     setError(null);
     try {
-      await request("/api/onboarding/interests", {
+      await request<InterestsResponse>("/api/onboarding/interests", {
         method: "POST",
         body: JSON.stringify({ interests: [...selected] }),
       });
       router.push("/");
-    } catch {
-      setError("Please sign in to save your interests");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setError("Please sign in to save your interests");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   }
 
@@ -153,7 +163,7 @@ export default function InterestsPage() {
       <div className="h-[129px] bg-[rgba(253,253,245,0.9)] border-t border-border-warm shadow-[0px_-4px_30px_rgba(0,0,0,0.03)] pt-[33px] px-8 shrink-0">
         <button
           type="button"
-          disabled={submitting || selected.size === 0}
+          disabled={isSubmitting || selected.size === 0}
           onClick={handleSubmit}
           className="bg-black rounded-full h-16 w-full shadow-[0px_25px_50px_rgba(0,0,0,0.2)] flex items-center justify-center disabled:opacity-50"
         >
