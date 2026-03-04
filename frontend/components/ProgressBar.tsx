@@ -16,8 +16,10 @@ export function ProgressBar() {
   const trackRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const [isDraggingState, setIsDraggingState] = useState(false);
+  const [dragTime, setDragTime] = useState<number | null>(null);
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const displayTime = dragTime ?? currentTime;
+  const progress = duration > 0 ? (displayTime / duration) * 100 : 0;
 
   const getTimeFromEvent = useCallback((clientX: number) => {
     const track = trackRef.current;
@@ -31,17 +33,21 @@ export function ProgressBar() {
     isDragging.current = true;
     setIsDraggingState(true);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    seek(getTimeFromEvent(e.clientX));
+    setDragTime(getTimeFromEvent(e.clientX));
   }
 
   function handlePointerMove(e: React.PointerEvent) {
     if (!isDragging.current) return;
-    seek(getTimeFromEvent(e.clientX));
+    setDragTime(getTimeFromEvent(e.clientX));
   }
 
   function handlePointerUp() {
+    if (isDragging.current && dragTime !== null) {
+      seek(dragTime);
+    }
     isDragging.current = false;
     setIsDraggingState(false);
+    setDragTime(null);
   }
 
   return (
@@ -57,7 +63,7 @@ export function ProgressBar() {
         aria-label="Playback progress"
         aria-valuemin={0}
         aria-valuemax={duration}
-        aria-valuenow={currentTime}
+        aria-valuenow={displayTime}
         tabIndex={0}
       >
         {/* Background track */}
@@ -78,7 +84,7 @@ export function ProgressBar() {
 
       {/* Time labels */}
       <div className="flex justify-between mt-1">
-        <span className="font-inter text-xs text-[#666]">{formatTime(currentTime)}</span>
+        <span className="font-inter text-xs text-[#666]">{formatTime(displayTime)}</span>
         <span className="font-inter text-xs text-[#666]">{formatTime(duration)}</span>
       </div>
     </div>
