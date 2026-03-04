@@ -5,7 +5,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
 permissions:
@@ -18,10 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Production deploy on push to main
-  deploy-production:
-    name: Production
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  deploy:
+    name: Railway
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,37 +26,27 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Deploy
+      # Production deploy on push to main or manual trigger
+      - name: Deploy to Production
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: railway up --service=${{ secrets.RAILWAY_SERVICE_ID }} -d
         working-directory: backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-  # Preview deploy on PR open/update
-  deploy-preview:
-    name: Preview
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      # PR: verify Docker build
+      - name: Verify Docker Build
+        if: github.event_name == 'pull_request'
+        run: docker build -t podcast-backend-test .
+        working-directory: backend
 
-      - name: Deploy Preview Environment
-        id: deploy
-        uses: ayungavis/railway-preview-deploy@v1.0.2
-        with:
-          railway_api_token: ${{ secrets.RAILWAY_API_TOKEN }}
-          project_id: ${{ secrets.RAILWAY_PROJECT_ID }}
-          environment_name: 'production'
-          preview_environment_name: 'pr-${{ github.event.pull_request.number }}'
-          branch_name: ${{ github.head_ref }}
-
-      - name: Comment Preview URL on PR
-        if: steps.deploy.outputs.service_domain != ''
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            const marker = '<!-- railway-preview -->';
-            const body = `${marker}\n🚂 Preview deployed: https://${{ steps.deploy.outputs.service_domain }}`;
+            const marker = '<!-- railway-deploy -->';
+            const body = `${marker}\n🚂 Backend Docker build verified`;
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -81,17 +68,3 @@ jobs:
                 body
               });
             }
-
-  # Cleanup preview environment on PR close
-  cleanup-preview:
-    name: Cleanup
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ayungavis/railway-preview-deploy@v1.0.2
-        with:
-          railway_api_token: ${{ secrets.RAILWAY_API_TOKEN }}
-          project_id: ${{ secrets.RAILWAY_PROJECT_ID }}
-          cleanup: 'true'
