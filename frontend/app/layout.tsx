@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Libre_Baskerville, Inter } from "next/font/google";
+import { ClientLayout } from "@/components/ClientLayout";
 import "./globals.css";
 
 const libreBaskerville = Libre_Baskerville({
@@ -29,7 +30,7 @@ export default function RootLayout({
       <body
         className={`${libreBaskerville.variable} ${inter.variable} antialiased`}
       >
-        {children}
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

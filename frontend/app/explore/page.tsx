@@ -1,63 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { SearchInput } from '@/components/SearchInput';
 import { EpisodeRow } from '@/components/EpisodeRow';
 import { BottomNav } from '@/components/BottomNav';
-import { useAudioPlayer } from '@/hooks/useAudioPlayer';
-import type { Episode } from '@/types/podcast';
+import { useAudioState } from '@/hooks/useAudioState';
+import { useAudioDispatch } from '@/hooks/useAudioDispatch';
+import { getDiscoverEpisodes } from '@/data/episodes';
 
-const DISCOVER_EPISODES: Episode[] = [
-  {
-    id: 'disc-1',
-    title: 'Rust vs Go in 2026: The Definitive Take',
-    subtitle: 'Rust / Go / Performance',
-    creator: '@dev.alex',
-    duration: '9 min',
-    color: '#f54900',
-    imageUrl: '/covers/rust-vs-go.png',
-  },
-  {
-    id: 'disc-2',
-    title: 'Quantum Computing Explained Simply',
-    subtitle: 'Quantum / Qubits / Google',
-    creator: '@physics.dan',
-    duration: '11 min',
-    color: '#009689',
-    imageUrl: '/covers/quantum.png',
-  },
-  {
-    id: 'disc-3',
-    title: 'Claude Code and the AI Coding Revolution',
-    subtitle: 'AI / Coding / Agents',
-    creator: '@techie.sam',
-    duration: '14 min',
-    color: '#432dd7',
-    imageUrl: '/covers/claude-coding.png',
-  },
-  {
-    id: 'disc-4',
-    title: 'Are Podcasts Dying or Evolving?',
-    subtitle: 'Media / Audio / Trends',
-    creator: '@media.jan',
-    duration: '8 min',
-    color: '#155dfc',
-    imageUrl: '/covers/death-podcasts.png',
-  },
-  {
-    id: 'disc-5',
-    title: 'The Science of Sleep & Productivity',
-    subtitle: 'Sleep / Focus / Deep Work',
-    creator: '@sarah.k',
-    duration: '10 min',
-    color: '#ff637e',
-    imageUrl: '/covers/sleep-science.png',
-  },
-];
+const DISCOVER_EPISODES = getDiscoverEpisodes();
 
 export default function ExplorePage() {
   const [search, setSearch] = useState('');
-  const { playingId, toggle } = useAudioPlayer();
+  const { currentEpisode, isPlaying } = useAudioState();
+  const { toggle, play } = useAudioDispatch();
+  const router = useRouter();
+
+  const hasPlayer = currentEpisode !== null;
 
   const filtered = DISCOVER_EPISODES.filter(
     (ep) =>
@@ -67,7 +27,7 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <main className="mx-auto w-full max-w-[428px] px-6 pt-6 pb-24">
+      <main className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}>
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-6">
             <h1 className="font-serif text-4xl leading-10 text-[#111]">
@@ -91,8 +51,12 @@ export default function ExplorePage() {
                   duration={ep.duration}
                   color={ep.color}
                   imageUrl={ep.imageUrl}
-                  isPlaying={playingId === ep.id}
-                  onPlay={() => toggle(ep.id)}
+                  isPlaying={currentEpisode?.id === ep.id && isPlaying}
+                  onPlay={() => toggle(ep)}
+                  onTap={() => {
+                    play(ep);
+                    router.push(`/episode/${ep.id}`);
+                  }}
                 />
               ))
             )}
