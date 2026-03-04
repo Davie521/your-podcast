@@ -44,7 +44,7 @@
 
 | Field    | Type   | Notes                     |
 | -------- | ------ | ------------------------- |
-| `speaker`| string | `小明` or `小红`           |
+| `speaker`| string | `Alex` or `Jordan`        |
 | `text`   | string | Dialogue line             |
 
 ---
@@ -227,8 +227,8 @@ Single episode with full detail (transcript + sources). No auth required for pub
     { "title": "Article title", "url": "https://...", "source": "Hacker News" }
   ],
   "transcript": [
-    { "speaker": "小明", "text": "大家好，欢迎收听今天的科技早报..." },
-    { "speaker": "小红", "text": "今天我们来聊聊..." }
+    { "speaker": "Alex", "text": "大家好，欢迎收听今天的科技早报..." },
+    { "speaker": "Jordan", "text": "今天我们来聊聊..." }
   ]
 }
 ```

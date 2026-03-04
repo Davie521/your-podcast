@@ -1,5 +1,9 @@
 # Backend Implementation Plan
 
+> ⚠️ **DEPRECATED** — 2026-03-04
+> All phases (1–9) have been fully implemented. This document is kept for historical reference only.
+> For current architecture, see `CLAUDE.md` and `docs/architecture-decision.md`.
+
 > Based on: API contract, UX plan, architecture-decision.md, CLAUDE.md
 > Current state: FastAPI shell with `/api/health` only
 

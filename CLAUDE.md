@@ -26,20 +26,31 @@ docs/              # 架构决策文档
 - 入口: `app/main.py` (FastAPI)
 - 配置: `app/config.py` (环境变量)
 - 模型: `app/models.py` (SQLModel + SQLite)
+- 路由: `app/routers/` — `auth.py`, `episodes.py`, `generate.py`, `tasks.py`, `onboarding.py`
 - 服务层: `app/services/`
   - `rss.py` — feedparser 抓取
   - `gemini.py` — Google Gemini 筛选
   - `podcast.py` — Podcastfy 脚本生成
-  - `tts.py` — GLM 智谱 TTS (小明男声 + 小红女声)
+  - `tts.py` — Inworld TTS（默认）/ Google Gemini TTS（备选），双声线 Alex + Jordan
   - `audio.py` — pydub/ffmpeg 合并 MP3
-  - `storage.py` — R2 上传
-- CLI: `generate.py` — 手动生成播客
-- API: `/api/episodes`, `/api/generate`
+  - `storage.py` — R2 上传（boto3 S3 兼容）
+  - `cover.py` — 播客封面生成（渐变色占位图）
+  - `pipeline.py` — 全流程编排（RSS → 筛选 → 脚本 → TTS → 合并 → 上传 → 入库）
+- CLI: `generate.py` — 手动生成播客；`seed.py` — 填充测试数据
+- 完整 API: `/api/health`, `/api/auth/*`, `/api/episodes`, `/api/episodes/me`, `/api/episodes/{id}`, `/api/generate`, `/api/tasks/{id}`, `/api/onboarding/interests`
 
 ## 前端 (frontend/)
 
-- 页面: `app/page.tsx` (首页播放器), `app/archive/page.tsx` (往期列表)
-- 组件: `components/Player.tsx`, `components/EpisodeList.tsx`
+- 页面:
+  - `app/page.tsx` — 重定向到 /explore
+  - `app/explore/page.tsx` — 播客发现页（当前使用硬编码示例数据，待接入 API）
+- 组件:
+  - `components/PodcastCard.tsx` — 播客卡片（含播放按钮）
+  - `components/SearchInput.tsx` — 搜索框
+  - `components/BottomNav.tsx` — 底部导航（/explore, /shows, /profile）
+  - `components/Player.tsx` — 音频播放器（待实现）
+- 类型: `types/podcast.ts`
+- API 客户端: `lib/api.ts`（待实现，调用后端 `/api/episodes`）
 
 ## 开发命令
 
@@ -88,6 +99,8 @@ cd frontend && vercel         # 前端
 ## 注意事项
 
 - 播客生成是长任务（几分钟），后端接口需要异步处理或后台任务
-- GLM TTS 需要逐句调用再用 ffmpeg 拼接，注意错误重试
+- TTS 需要逐句调用再用 ffmpeg 拼接，注意错误重试（Inworld 最多 5 次重试）
 - R2 上传使用 boto3 (S3 兼容)，endpoint 指向 Cloudflare
 - SQLite 文件在容器内，用 Litestream 实时备份到 R2 防丢失
+- **数据库选型已定**：保持 SQLite + Litestream，不迁移 Cloudflare D1（D1 已评估，复杂度收益比不佳）
+- 前端环境变量：`NEXT_PUBLIC_API_URL` 指向 Railway 后端地址（本地开发默认 `http://localhost:8000`）
