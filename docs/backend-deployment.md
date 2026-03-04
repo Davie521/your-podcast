@@ -38,23 +38,35 @@ curl https://your-podcast-production.up.railway.app/api/health
 
 ## 部署方式
 
-### 方式一：CLI 手动部署
+### 方式一：GitHub Actions 自动部署（推荐）
+
+通过 `.github/workflows/railway.yml` 管理部署：
+
+| 事件 | 行为 |
+|------|------|
+| push 到 main | 自动部署到 production |
+| PR 到 main | 创建 preview 环境，PR 评论中附部署 URL |
+| PR 关闭/合并 | 自动清理 preview 环境 |
+| workflow_dispatch | 手动触发 production 部署 |
+
+**需要的 GitHub Secrets：**
+
+| Secret | 说明 | 获取方式 |
+|--------|------|---------|
+| `RAILWAY_TOKEN` | Railway 项目 Token | Railway Dashboard → 项目 → Settings → Tokens |
+| `RAILWAY_SERVICE_ID` | Railway 服务 ID | Railway Dashboard → 服务 → Settings → Service ID |
+| `RAILWAY_API_TOKEN` | Railway 账户 API Token（preview 用） | Railway Dashboard → Account → Tokens |
+| `RAILWAY_PROJECT_ID` | Railway 项目 ID（preview 用） | Railway Dashboard → 项目 → Settings → Project ID |
+
+> **注意**：使用 GitHub Actions 部署时，应在 Railway Dashboard 关闭 GitHub 自动部署，避免重复部署。
+> 路径：服务 → Settings → Source → Disconnect Repo 或关闭 auto-deploy。
+
+### 方式二：CLI 手动部署
 
 ```bash
 cd backend
 railway up
 ```
-
-### 方式二：Git 推送自动部署
-
-在 Railway Dashboard 关联 GitHub Repo 后，每次 push 到 main 会自动重新部署。
-
-设置方法：
-1. 打开 https://railway.com → 进入 your-podcast 项目
-2. 点击服务 → Settings → Source
-3. Connect Repo → 选择 `Davie521/your-podcast`
-4. 设置 Root Directory 为 `backend/`
-5. 之后每次 `git push origin main` 自动部署
 
 ## 环境变量
 
