@@ -34,7 +34,7 @@ export function SourcesList({ sources }: SourcesListProps) {
           <div className="mt-3 flex flex-col gap-2">
             {sources.map((source) => (
               <a
-                key={source.title}
+                key={source.id}
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -42,7 +42,7 @@ export function SourcesList({ sources }: SourcesListProps) {
               >
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="font-inter text-sm text-[#111] truncate">{source.title}</span>
-                  <span className="font-inter text-xs text-[#666]">{source.publisher}</span>
+                  <span className="font-inter text-xs text-[#666]">{source.source}</span>
                 </div>
                 <ExternalLinkIcon className="size-4 shrink-0 ml-3 text-[#666]" />
               </a>

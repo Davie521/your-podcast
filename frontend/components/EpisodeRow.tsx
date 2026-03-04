@@ -1,13 +1,12 @@
-import Image from 'next/image';
 import { PlayIcon } from '@/components/icons/PlayIcon';
 import { PauseIcon } from '@/components/icons/PauseIcon';
 
 interface EpisodeRowProps {
   readonly title: string;
-  readonly subtitle: string;
-  readonly creator: string;
+  readonly description: string;
+  readonly creatorName: string;
   readonly duration: string;
-  readonly imageUrl?: string;
+  readonly coverUrl?: string;
   readonly color: string;
   readonly isPlaying?: boolean;
   readonly onPlay?: () => void;
@@ -16,12 +15,12 @@ interface EpisodeRowProps {
   readonly style?: React.CSSProperties;
 }
 
-export function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color, isPlaying = false, onPlay, onTap, className, style }: EpisodeRowProps) {
+export function EpisodeRow({ title, description, creatorName, duration, coverUrl, color, isPlaying = false, onPlay, onTap, className, style }: EpisodeRowProps) {
   const Icon = isPlaying ? PauseIcon : PlayIcon;
 
   return (
     <div
-      className={`flex gap-4 items-start border-b border-border-warm pb-4 cursor-pointer tap-feedback ${className ?? ''}`}
+      className={`flex gap-4 items-start border-b border-border-warm pb-4 ${onTap ? 'cursor-pointer tap-feedback' : 'cursor-default'} ${className ?? ''}`}
       style={style}
       onClick={onTap}
       role={onTap ? 'button' : undefined}
@@ -32,15 +31,15 @@ export function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color
         className="relative size-20 shrink-0 rounded-[10px] overflow-hidden"
         style={{ backgroundColor: color }}
       >
-        {imageUrl && (
-          <Image src={imageUrl} alt={title} fill className="object-cover opacity-80" />
+        {coverUrl && (
+          <img src={coverUrl} alt={title} className="absolute inset-0 size-full object-cover opacity-80" />
         )}
       </div>
       <div className="flex-1 min-w-0 pt-0.5">
         <h3 className="font-serif font-bold text-[16px] leading-5 text-[#111] line-clamp-2">{title}</h3>
-        <p className="font-serif text-[12px] leading-4 text-[rgba(17,17,17,0.7)] mt-1">{subtitle}</p>
+        <p className="font-serif text-[12px] leading-4 text-[rgba(17,17,17,0.7)] mt-1">{description}</p>
         <div className="flex items-center gap-2 mt-1.5">
-          <span className="font-inter text-[12px] text-[#666]">{creator}</span>
+          <span className="font-inter text-[12px] text-[#666]">{creatorName}</span>
           <span className="text-[#666]">&middot;</span>
           <span className="font-inter text-[12px] text-[#666]">{duration}</span>
         </div>

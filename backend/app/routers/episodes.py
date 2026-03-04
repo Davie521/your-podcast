@@ -4,12 +4,10 @@ from app import d1_database
 from app.auth import get_current_user, get_optional_user
 from app.database import get_db
 from app.schemas import (
-    CreatorInfo,
     EpisodeDetail,
     EpisodeListItem,
     EpisodeListResponse,
     SourceItem,
-    TranscriptItem,
 )
 from app.services.d1 import D1Client
 
@@ -26,7 +24,7 @@ def _row_to_list_item(row: dict) -> EpisodeListItem:
         duration=row["duration"],
         is_public=bool(row["is_public"]),
         creator_id=row["creator_id"],
-        creator=CreatorInfo(name=row["creator_name"], avatar_url=row["creator_avatar_url"]),
+        creator_name=row["creator_name"],
         published_at=row["published_at"],
     )
 
@@ -75,5 +73,4 @@ async def get_episode(
     return EpisodeDetail(
         **item.model_dump(),
         sources=[SourceItem(id=s["id"], title=s["title"], url=s["url"], source=s["source"]) for s in ep["sources"]],
-        transcript=[TranscriptItem(speaker=t["speaker"], text=t["text"]) for t in ep["transcript"]],
     )

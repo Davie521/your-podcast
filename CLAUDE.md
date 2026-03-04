@@ -45,22 +45,28 @@ docs/              # 架构决策文档
 
 - 页面:
   - `app/page.tsx` — 重定向到 /explore
-  - `app/explore/page.tsx` — 播客发现页（当前使用硬编码示例数据，待接入 API）
+  - `app/explore/page.tsx` — 播客发现页（接入 /api/episodes，API 失败时降级为示例数据）
+  - `app/shows/page.tsx` — 我的播客页（接入 /api/episodes/me，需登录）
+  - `app/episode/[id]/page.tsx` — 播客详情页（接入 /api/episodes/{id}）
   - `app/login/page.tsx` — 登录页（Google/GitHub OAuth）
   - `app/profile/page.tsx` — 个人资料页（需登录，显示用户信息）
 - 组件:
   - `components/BottomNav.tsx` — 底部导航（/explore, /shows, /profile）
   - `components/ClientLayout.tsx` — 客户端布局（AuthProvider + AudioProvider + ViewTransition）
   - `components/EpisodeRow.tsx` — 播客集行
+  - `components/NowPlaying.tsx` — 全屏播放器（播客详情页）
   - `components/MiniPlayer.tsx` — 迷你播放器
+  - `components/SourcesList.tsx` — 播客来源列表（可折叠）
 - 上下文:
   - `contexts/AudioContext.tsx` — 全局音频状态
   - `contexts/AuthContext.tsx` — 认证状态（auto dev-login in dev mode）
 - Hooks:
   - `hooks/useAuth.ts` / `hooks/useAuthDispatch.ts` — 认证状态和操作
   - `hooks/useAudioState.ts` / `hooks/useAudioDispatch.ts` — 音频状态和操作
-- 类型: `types/audio.ts`, `types/auth.ts`
-- API 客户端: `lib/api.ts`（fetch wrapper with credentials: 'include'）
+- 工具: `lib/format.ts`（episodeColor 颜色哈希 + formatDuration 时长格式化）
+- 类型: `types/audio.ts`（Episode, EpisodeWithSources, Source）, `types/auth.ts`
+- API 客户端: `lib/api.ts`（fetch wrapper + episodes API 适配器，snake_case → camelCase）
+- 降级数据: `data/episodes.ts`（FALLBACK_EPISODES，API 不可用时使用）
 
 ## 开发命令
 

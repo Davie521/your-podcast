@@ -5,14 +5,6 @@ from pydantic import BaseModel
 from app.models import TaskStatus
 
 
-# ── Shared ────────────────────────────────────────────────────
-
-
-class CreatorInfo(BaseModel):
-    name: str
-    avatar_url: str
-
-
 # ── Episodes ──────────────────────────────────────────────────
 
 
@@ -21,11 +13,6 @@ class SourceItem(BaseModel):
     title: str
     url: str
     source: str
-
-
-class TranscriptItem(BaseModel):
-    speaker: str
-    text: str
 
 
 class EpisodeListItem(BaseModel):
@@ -37,13 +24,12 @@ class EpisodeListItem(BaseModel):
     duration: int
     is_public: bool
     creator_id: str
-    creator: CreatorInfo
+    creator_name: str
     published_at: datetime
 
 
 class EpisodeDetail(EpisodeListItem):
     sources: list[SourceItem]
-    transcript: list[TranscriptItem]
 
 
 class EpisodeListResponse(BaseModel):

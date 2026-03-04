@@ -97,7 +97,7 @@ async def list_public_episodes(
     total = count_rows[0]["cnt"] if count_rows else 0
 
     rows = await db.execute(
-        """SELECT e.*, u.name AS creator_name, u.avatar_url AS creator_avatar_url
+        """SELECT e.*, u.name AS creator_name
            FROM episode e
            JOIN user u ON e.creator_id = u.id
            WHERE e.is_public = 1
@@ -117,7 +117,7 @@ async def list_user_episodes(
     total = count_rows[0]["cnt"] if count_rows else 0
 
     rows = await db.execute(
-        """SELECT e.*, u.name AS creator_name, u.avatar_url AS creator_avatar_url
+        """SELECT e.*, u.name AS creator_name
            FROM episode e
            JOIN user u ON e.creator_id = u.id
            WHERE e.creator_id = ?
@@ -130,7 +130,7 @@ async def list_user_episodes(
 
 async def get_episode_detail(db: D1Client, episode_id: str) -> dict | None:
     rows = await db.execute(
-        """SELECT e.*, u.name AS creator_name, u.avatar_url AS creator_avatar_url
+        """SELECT e.*, u.name AS creator_name
            FROM episode e
            JOIN user u ON e.creator_id = u.id
            WHERE e.id = ?""",
@@ -144,13 +144,8 @@ async def get_episode_detail(db: D1Client, episode_id: str) -> dict | None:
     sources = await db.execute(
         "SELECT * FROM source WHERE episode_id = ?", [episode_id]
     )
-    transcript = await db.execute(
-        "SELECT * FROM transcript_line WHERE episode_id = ? ORDER BY line_order",
-        [episode_id],
-    )
 
     episode["sources"] = sources
-    episode["transcript"] = transcript
     return episode
 
 

@@ -2,7 +2,7 @@
 
 import { createContext, useReducer, useRef, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { AudioState, AudioAction, AudioDispatch, EpisodeDetail } from '@/types/audio';
+import type { AudioState, AudioAction, AudioDispatch, Episode } from '@/types/audio';
 
 const INITIAL_STATE: AudioState = {
   currentEpisode: null,
@@ -21,7 +21,7 @@ function audioReducer(state: AudioState, action: AudioAction): AudioState {
         isPlaying: true,
         isLoading: true,
         currentTime: 0,
-        duration: action.episode.durationSeconds,
+        duration: action.episode.duration,
       };
     case 'PAUSE':
       return { ...state, isPlaying: false };
@@ -81,7 +81,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
     }, TIME_UPDATE_INTERVAL);
   }, [clearTimeInterval]);
 
-  const play = useCallback((episode: EpisodeDetail) => {
+  const play = useCallback((episode: Episode) => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -123,7 +123,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
     dispatch({ type: 'RESUME' });
   }, [startSimulatedTimer]);
 
-  const toggle = useCallback((episode: EpisodeDetail) => {
+  const toggle = useCallback((episode: Episode) => {
     const { currentEpisode, isPlaying } = stateRef.current;
     if (currentEpisode?.id === episode.id) {
       if (isPlaying) {

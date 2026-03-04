@@ -46,7 +46,7 @@ dev_origin_regex = None
 if settings.is_dev:
     origins.append("http://localhost:3001")
     # Allow any device on RFC 1918 LAN subnets (any port)
-    dev_origin_regex = r"http://(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?"
+    dev_origin_regex = r"http://(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?"
 
 app.add_middleware(
     CORSMiddleware,
