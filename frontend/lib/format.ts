@@ -13,6 +13,6 @@ export function episodeColor(id: string): string {
 
 export function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
-  const mins = Math.round(seconds / 60);
+  const mins = Math.floor(seconds / 60);
   return `${mins} min`;
 }

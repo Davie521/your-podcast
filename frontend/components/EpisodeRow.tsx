@@ -20,7 +20,7 @@ export function EpisodeRow({ title, description, creatorName, duration, coverUrl
 
   return (
     <div
-      className={`flex gap-4 items-start border-b border-border-warm pb-4 cursor-pointer tap-feedback ${className ?? ''}`}
+      className={`flex gap-4 items-start border-b border-border-warm pb-4 ${onTap ? 'cursor-pointer tap-feedback' : 'cursor-default'} ${className ?? ''}`}
       style={style}
       onClick={onTap}
       role={onTap ? 'button' : undefined}
