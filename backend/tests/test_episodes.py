@@ -2,59 +2,45 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlmodel import Session
 
-from app.models import Episode, Source, TranscriptLine, User
+from app import d1_database
 
 
-def _make_episode(
-    session: Session,
-    creator: User,
+async def _make_episode(
+    db,
+    creator: dict,
     *,
     title: str = "Test Episode",
     is_public: bool = True,
     published_at: datetime | None = None,
-) -> Episode:
-    ep = Episode(
-        id=str(uuid.uuid4()),
-        title=title,
-        description=f"Description for {title}",
-        audio_url="https://r2.example.com/test.mp3",
-        duration=300,
-        is_public=is_public,
-        creator_id=creator.id,
-        published_at=published_at or datetime.now(timezone.utc),
+) -> dict:
+    ep_id = str(uuid.uuid4())
+    pub = (published_at or datetime.now(timezone.utc)).isoformat()
+    await db.execute(
+        """INSERT INTO episode (id, title, description, cover_url, audio_url, duration, is_public, creator_id, published_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        [ep_id, title, f"Description for {title}", "", "https://r2.example.com/test.mp3",
+         300, 1 if is_public else 0, creator["id"], pub],
     )
-    session.add(ep)
-    session.commit()
-    session.refresh(ep)
-    return ep
+    return {"id": ep_id, "title": title, "is_public": is_public, "published_at": pub, "creator_id": creator["id"]}
 
 
-def _make_source(session: Session, episode: Episode) -> Source:
-    src = Source(
-        id=str(uuid.uuid4()),
-        episode_id=episode.id,
-        title="Source Article",
-        url="https://example.com/article",
-        source="TechFeed",
+async def _make_source(db, episode: dict) -> dict:
+    src_id = str(uuid.uuid4())
+    await db.execute(
+        "INSERT INTO source (id, episode_id, title, url, source) VALUES (?, ?, ?, ?, ?)",
+        [src_id, episode["id"], "Source Article", "https://example.com/article", "TechFeed"],
     )
-    session.add(src)
-    session.commit()
-    return src
+    return {"id": src_id}
 
 
-def _make_transcript(session: Session, episode: Episode) -> TranscriptLine:
-    line = TranscriptLine(
-        id=str(uuid.uuid4()),
-        episode_id=episode.id,
-        line_order=0,
-        speaker="小明",
-        text="Hello world",
+async def _make_transcript(db, episode: dict) -> dict:
+    line_id = str(uuid.uuid4())
+    await db.execute(
+        "INSERT INTO transcript_line (id, episode_id, line_order, speaker, text) VALUES (?, ?, ?, ?, ?)",
+        [line_id, episode["id"], 0, "\u5c0f\u660e", "Hello world"],
     )
-    session.add(line)
-    session.commit()
-    return line
+    return {"id": line_id}
 
 
 # ── GET /api/episodes (public list) ────────────────────────────
@@ -70,9 +56,9 @@ async def test_list_episodes_empty(client):
 
 
 @pytest.mark.anyio
-async def test_list_episodes_public_only(client, session, test_user):
-    _make_episode(session, test_user, title="Public", is_public=True)
-    _make_episode(session, test_user, title="Private", is_public=False)
+async def test_list_episodes_public_only(client, db, test_user):
+    await _make_episode(db, test_user, title="Public", is_public=True)
+    await _make_episode(db, test_user, title="Private", is_public=False)
 
     resp = await client.get("/api/episodes")
     data = resp.json()
@@ -81,10 +67,10 @@ async def test_list_episodes_public_only(client, session, test_user):
 
 
 @pytest.mark.anyio
-async def test_list_episodes_newest_first(client, session, test_user):
+async def test_list_episodes_newest_first(client, db, test_user):
     now = datetime.now(timezone.utc)
-    _make_episode(session, test_user, title="Old", published_at=now - timedelta(days=2))
-    _make_episode(session, test_user, title="New", published_at=now)
+    await _make_episode(db, test_user, title="Old", published_at=now - timedelta(days=2))
+    await _make_episode(db, test_user, title="New", published_at=now)
 
     resp = await client.get("/api/episodes")
     titles = [e["title"] for e in resp.json()["episodes"]]
@@ -92,9 +78,9 @@ async def test_list_episodes_newest_first(client, session, test_user):
 
 
 @pytest.mark.anyio
-async def test_list_episodes_pagination(client, session, test_user):
+async def test_list_episodes_pagination(client, db, test_user):
     for i in range(5):
-        _make_episode(session, test_user, title=f"Ep {i}")
+        await _make_episode(db, test_user, title=f"Ep {i}")
 
     resp = await client.get("/api/episodes?limit=2&offset=0")
     data = resp.json()
@@ -116,9 +102,9 @@ async def test_my_episodes_unauthenticated(client):
 
 
 @pytest.mark.anyio
-async def test_my_episodes_includes_private(authenticated_client, session, test_user):
-    _make_episode(session, test_user, title="Public", is_public=True)
-    _make_episode(session, test_user, title="Private", is_public=False)
+async def test_my_episodes_includes_private(authenticated_client, db, test_user):
+    await _make_episode(db, test_user, title="Public", is_public=True)
+    await _make_episode(db, test_user, title="Private", is_public=False)
 
     resp = await authenticated_client.get("/api/episodes/me")
     data = resp.json()
@@ -137,55 +123,54 @@ async def test_get_episode_not_found(client):
 
 
 @pytest.mark.anyio
-async def test_get_public_episode(client, session, test_user):
-    ep = _make_episode(session, test_user, title="Public EP")
-    _make_source(session, ep)
-    _make_transcript(session, ep)
+async def test_get_public_episode(client, db, test_user):
+    ep = await _make_episode(db, test_user, title="Public EP")
+    await _make_source(db, ep)
+    await _make_transcript(db, ep)
 
-    resp = await client.get(f"/api/episodes/{ep.id}")
+    resp = await client.get(f"/api/episodes/{ep['id']}")
     assert resp.status_code == 200
     data = resp.json()
     assert data["title"] == "Public EP"
     assert len(data["sources"]) == 1
     assert len(data["transcript"]) == 1
-    assert data["transcript"][0]["speaker"] == "小明"
+    assert data["transcript"][0]["speaker"] == "\u5c0f\u660e"
 
 
 @pytest.mark.anyio
-async def test_private_episode_404_for_unauthenticated(client, session, test_user):
-    ep = _make_episode(session, test_user, is_public=False)
-    resp = await client.get(f"/api/episodes/{ep.id}")
+async def test_private_episode_404_for_unauthenticated(client, db, test_user):
+    ep = await _make_episode(db, test_user, is_public=False)
+    resp = await client.get(f"/api/episodes/{ep['id']}")
     assert resp.status_code == 404
 
 
 @pytest.mark.anyio
-async def test_private_episode_404_for_non_owner(client, session, test_user, auth_cookie):
-    ep = _make_episode(session, test_user, is_public=False)
+async def test_private_episode_404_for_non_owner(client, db, test_user, auth_cookie):
+    ep = await _make_episode(db, test_user, is_public=False)
 
     # Create a different user and authenticate as them
-    other_user = User(
-        id=str(uuid.uuid4()),
-        name="Other",
+    other_user = await d1_database.upsert_user(
+        db,
         email="other@example.com",
+        name="Other",
+        avatar_url="",
         provider="github",
         provider_id="99999",
     )
-    session.add(other_user)
-    session.commit()
 
     from app.auth import create_session_cookie, SESSION_COOKIE_NAME
     from tests.conftest import _test_settings
 
-    other_cookie = create_session_cookie(other_user.id, _test_settings)
+    other_cookie = create_session_cookie(other_user["id"], _test_settings)
     client.cookies.set(SESSION_COOKIE_NAME, other_cookie)
 
-    resp = await client.get(f"/api/episodes/{ep.id}")
+    resp = await client.get(f"/api/episodes/{ep['id']}")
     assert resp.status_code == 404
 
 
 @pytest.mark.anyio
-async def test_private_episode_200_for_owner(authenticated_client, session, test_user):
-    ep = _make_episode(session, test_user, is_public=False, title="My Secret EP")
-    resp = await authenticated_client.get(f"/api/episodes/{ep.id}")
+async def test_private_episode_200_for_owner(authenticated_client, db, test_user):
+    ep = await _make_episode(db, test_user, is_public=False, title="My Secret EP")
+    resp = await authenticated_client.get(f"/api/episodes/{ep['id']}")
     assert resp.status_code == 200
     assert resp.json()["title"] == "My Secret EP"

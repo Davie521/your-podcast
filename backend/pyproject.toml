@@ -6,8 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.135.0",
     "uvicorn[standard]>=0.41.0",
-    # Database & config
-    "sqlmodel>=0.0.22",
+    # Config
     "pydantic-settings>=2.0",
     "python-dotenv>=1.0",
     # Auth
@@ -21,6 +20,8 @@ dependencies = [
     "pydub>=0.25",
     # Utilities
     "python-multipart>=0.0.9",
+    # Local dev database
+    "aiosqlite>=0.20",
 ]
 
 [project.optional-dependencies]

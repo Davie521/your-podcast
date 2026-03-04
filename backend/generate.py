@@ -12,14 +12,11 @@ import argparse
 import asyncio
 import logging
 import sys
-import uuid
 from datetime import datetime, timezone
 
-from sqlmodel import Session, select
-
+from app import d1_database
 from app.config import get_settings
-from app.database import create_db_and_tables, engine
-from app.models import Task, TaskStatus, User
+from app.database import create_db_client
 from app.services.pipeline import DEFAULT_FEEDS, run_pipeline
 
 logging.basicConfig(
@@ -38,25 +35,27 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def get_or_create_system_user(session: Session) -> User:
+async def get_or_create_system_user(db) -> dict:
     """Get or create a system user for CLI-generated episodes."""
     system_email = "system@your-podcast.local"
-    user = session.exec(select(User).where(User.email == system_email)).first()
+    user = await d1_database.get_user_by_email(db, system_email)
     if user:
         return user
 
-    user = User(
-        id=str(uuid.uuid4()),
-        name="System",
+    user = await d1_database.upsert_user(
+        db,
         email=system_email,
+        name="System",
+        avatar_url="",
         provider="system",
         provider_id="system",
-        interests=["technology", "internet", "AI", "programming"],
     )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    logger.info("Created system user: %s", user.id)
+    # Set default interests
+    await d1_database.update_user_interests(
+        db, user["id"], ["technology", "internet", "AI", "programming"]
+    )
+    user["interests"] = ["technology", "internet", "AI", "programming"]
+    logger.info("Created system user: %s", user["id"])
     return user
 
 
@@ -69,47 +68,49 @@ def resolve_feeds(args: argparse.Namespace, settings_feeds: str) -> list[str]:
     return DEFAULT_FEEDS
 
 
-def main() -> None:
+async def async_main() -> None:
     args = parse_args()
     settings = get_settings()
-    create_db_and_tables()
+    db = create_db_client(settings)
 
     feed_urls = resolve_feeds(args, settings.rss_feeds)
     episode_date = args.date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    with Session(engine) as session:
-        # Resolve user
-        if args.user_id:
-            user = session.exec(select(User).where(User.id == args.user_id)).first()
-            if not user:
-                logger.error("User %s not found", args.user_id)
-                sys.exit(1)
-        else:
-            user = get_or_create_system_user(session)
-
-        # Create task
-        task = Task(user_id=user.id, status=TaskStatus.pending, progress="starting")
-        session.add(task)
-        session.commit()
-        session.refresh(task)
-        logger.info("Task %s created for user %s", task.id, user.name)
-
-        # Run pipeline (delegating to the shared orchestrator)
-        episode = asyncio.run(run_pipeline(
-            user=user,
-            feed_urls=feed_urls,
-            episode_date=episode_date,
-            task=task,
-            session=session,
-            settings=settings,
-            dry_run=args.dry_run,
-        ))
-
-        if episode:
-            logger.info("Done! Episode: %s", episode.title)
-        else:
-            logger.warning("Pipeline completed with no episode")
+    # Resolve user
+    if args.user_id:
+        user = await d1_database.get_user_by_id(db, args.user_id)
+        if not user:
+            logger.error("User %s not found", args.user_id)
             sys.exit(1)
+    else:
+        user = await get_or_create_system_user(db)
+
+    # Create task
+    task = await d1_database.create_task(
+        db, user_id=user["id"], status="pending", progress="starting"
+    )
+    logger.info("Task %s created for user %s", task["id"], user["name"])
+
+    # Run pipeline
+    episode = await run_pipeline(
+        user=user,
+        feed_urls=feed_urls,
+        episode_date=episode_date,
+        task_id=task["id"],
+        db=db,
+        settings=settings,
+        dry_run=args.dry_run,
+    )
+
+    if episode:
+        logger.info("Done! Episode: %s", episode["title"])
+    else:
+        logger.warning("Pipeline completed with no episode")
+        sys.exit(1)
+
+
+def main() -> None:
+    asyncio.run(async_main())
 
 
 if __name__ == "__main__":

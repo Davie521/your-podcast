@@ -1,4 +1,4 @@
-export function ProfileIcon({ className }: { className?: string }) {
+export function ProfileIcon({ className }: { readonly className?: string }) {
   return (
     <svg
       className={className}
@@ -7,15 +7,9 @@ export function ProfileIcon({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <circle
-        cx="12"
-        cy="8"
-        r="4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
       <path
-        d="M5 20C5 16.134 8.13401 13 12 13C15.866 13 19 16.134 19 20"
+        d="M4 21c0-3.314 3.582-6 8-6s8 2.686 8 6"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"

@@ -134,6 +134,15 @@ wheels = [
 ]
 
 [[package]]
+name = "aiosqlite"
+version = "0.22.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/8a/64761f4005f17809769d23e518d915db74e6310474e733e3593cfc854ef1/aiosqlite-0.22.1.tar.gz", hash = "sha256:043e0bd78d32888c0a9ca90fc788b38796843360c855a7262a532813133a0650", size = 14821, upload-time = "2025-12-23T19:25:43.997Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/b7/e3bf5133d697a08128598c8d0abc5e16377b51465a33756de24fa7dee953/aiosqlite-0.22.1-py3-none-any.whl", hash = "sha256:21c002eb13823fad740196c5a2e9d8e62f6243bd9e7e4a1f87fb5e44ecb4fceb", size = 17405, upload-time = "2025-12-23T19:25:42.139Z" },
+]
+
+[[package]]
 name = "alabaster"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -208,6 +217,7 @@ name = "backend"
 version = "0.2.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "aiosqlite" },
     { name = "authlib" },
     { name = "boto3" },
     { name = "fastapi" },
@@ -219,7 +229,6 @@ dependencies = [
     { name = "pydub" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
-    { name = "sqlmodel" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -237,6 +246,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.20" },
     { name = "authlib", specifier = ">=1.3" },
     { name = "boto3", specifier = ">=1.35" },
     { name = "fastapi", specifier = ">=0.135.0" },
@@ -254,7 +264,6 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=5.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "sqlmodel", specifier = ">=0.0.22" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
 provides-extras = ["generate", "test"]
@@ -4055,19 +4064,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/db/cafdeca5ecdaa3bb0811ba5449501da677ce0d83be8d05c5822da72d2e86/sqlalchemy-2.0.47-cp314-cp314t-win32.whl", hash = "sha256:c200db1128d72a71dc3c31c24b42eb9fd85b2b3e5a3c9ba1e751c11ac31250ff", size = 2147164, upload-time = "2026-02-24T17:14:40.783Z" },
     { url = "https://files.pythonhosted.org/packages/fc/5e/ff41a010e9e0f76418b02ad352060a4341bb15f0af66cedc924ab376c7c6/sqlalchemy-2.0.47-cp314-cp314t-win_amd64.whl", hash = "sha256:669837759b84e575407355dcff912835892058aea9b80bd1cb76d6a151cf37f7", size = 2182154, upload-time = "2026-02-24T17:14:43.205Z" },
     { url = "https://files.pythonhosted.org/packages/15/9f/7c378406b592fcf1fc157248607b495a40e3202ba4a6f1372a2ba6447717/sqlalchemy-2.0.47-py3-none-any.whl", hash = "sha256:e2647043599297a1ef10e720cf310846b7f31b6c841fee093d2b09d81215eb93", size = 1940159, upload-time = "2026-02-24T17:15:07.158Z" },
-]
-
-[[package]]
-name = "sqlmodel"
-version = "0.0.37"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic" },
-    { name = "sqlalchemy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/26/1d2faa0fd5a765267f49751de533adac6b9ff9366c7c6e7692df4f32230f/sqlmodel-0.0.37.tar.gz", hash = "sha256:d2c19327175794faf50b1ee31cc966764f55b1dedefc046450bc5741a3d68352", size = 85527, upload-time = "2026-02-21T16:39:47.038Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/e1/7c8d18e737433f3b5bbe27b56a9072a9fcb36342b48f1bef34b6da1d61f2/sqlmodel-0.0.37-py3-none-any.whl", hash = "sha256:2137a4045ef3fd66a917a7717ada959a1ceb3630d95e1f6aaab39dd2c0aef278", size = 27224, upload-time = "2026-02-21T16:39:47.781Z" },
 ]
 
 [[package]]

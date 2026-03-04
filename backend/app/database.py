@@ -1,25 +1,35 @@
-from collections.abc import Generator
-from pathlib import Path
-
-from sqlmodel import Session, SQLModel, create_engine
+import logging
 
 from app.config import get_settings
+from app.services.d1 import D1Client
+from app.services.local_sqlite import LocalSQLiteClient
 
-settings = get_settings()
+logger = logging.getLogger(__name__)
 
-# Ensure the SQLite parent directory exists
-if settings.database_url.startswith("sqlite"):
-    db_path = settings.database_url.replace("sqlite:///", "")
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args)
+_db_client: D1Client | LocalSQLiteClient | None = None
 
 
-def create_db_and_tables() -> None:
-    SQLModel.metadata.create_all(engine)
+def _has_d1_config() -> bool:
+    s = get_settings()
+    return bool(s.cloudflare_account_id and s.cloudflare_api_token and s.d1_database_id)
 
 
-def get_session() -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        yield session
+def create_db_client(settings=None) -> D1Client | LocalSQLiteClient:
+    """Create a new DB client based on available configuration.
+
+    Used by CLI scripts and background tasks that need their own client.
+    """
+    if _has_d1_config():
+        from app.services.d1 import get_d1_client
+        return get_d1_client(settings)
+    return LocalSQLiteClient()
+
+
+def get_db() -> D1Client | LocalSQLiteClient:
+    """FastAPI dependency — returns D1Client in production, LocalSQLiteClient in local dev."""
+    global _db_client
+    if _db_client is None:
+        _db_client = create_db_client()
+        kind = "Cloudflare D1" if _has_d1_config() else "local SQLite"
+        logger.info("Using %s database", kind)
+    return _db_client

@@ -1,6 +1,6 @@
 """Tests for Phase 5 service layer.
 
-All external APIs (feedparser, Gemini, Podcastfy, ZhipuAI, boto3, pydub)
+All external APIs (feedparser, Gemini, Podcastfy, TTS providers, boto3, pydub)
 are mocked so tests run offline without credentials.
 """
 
@@ -15,9 +15,9 @@ import pytest
 
 from app.config import Settings
 from app.services.rss import Article, fetch_articles, _parse_feed
-from app.services.gemini import filter_articles, _call_gemini
+from app.services.gemini import filter_articles
 from app.services.podcast import _parse_transcript, generate_script, ScriptLine
-from app.services.tts import synthesize_lines, _synthesize_one
+from app.services.tts import synthesize_lines
 from app.services.audio import merge_audio, _merge
 from app.services.cover import generate_cover_url
 from app.services.storage import upload_to_r2, _upload
@@ -37,11 +37,10 @@ def _make_article(i: int, url: str | None = None) -> Article:
 
 def _test_settings(**overrides) -> Settings:
     defaults = dict(
-        database_url="sqlite://",
+        cloudflare_account_id="test",
+        cloudflare_api_token="test",
+        d1_database_id="test",
         session_secret="test",
-        glm_api_key="fake-glm-key",
-        tts_voice_male="male-voice",
-        tts_voice_female="female-voice",
         r2_account_id="fake-account",
         r2_access_key_id="fake-key",
         r2_secret_access_key="fake-secret",
@@ -170,11 +169,10 @@ class TestGemini:
 
         mock_response = MagicMock()
         mock_response.text = "[1, 3]"
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = mock_response
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
 
-        with patch("app.services.gemini.genai") as mock_genai:
-            mock_genai.GenerativeModel.return_value = mock_model
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
             result = await filter_articles(articles, ["AI"], "fake-key")
 
         assert len(result) == 2
@@ -188,11 +186,10 @@ class TestGemini:
 
         mock_response = MagicMock()
         mock_response.text = "```json\n[0, 2, 4]\n```"
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = mock_response
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
 
-        with patch("app.services.gemini.genai") as mock_genai:
-            mock_genai.GenerativeModel.return_value = mock_model
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
             result = await filter_articles(articles, ["AI"], "fake-key")
 
         assert len(result) == 3
@@ -202,8 +199,7 @@ class TestGemini:
         """On Gemini error, falls back to first 8 articles."""
         articles = [_make_article(i) for i in range(10)]
 
-        with patch("app.services.gemini.genai") as mock_genai:
-            mock_genai.GenerativeModel.side_effect = RuntimeError("API error")
+        with patch("app.services.gemini.genai.Client", side_effect=RuntimeError("API error")):
             result = await filter_articles(articles, ["AI"], "fake-key")
 
         assert len(result) == 8
@@ -215,11 +211,10 @@ class TestGemini:
 
         mock_response = MagicMock()
         mock_response.text = "[0, 99, -1, 2]"
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = mock_response
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
 
-        with patch("app.services.gemini.genai") as mock_genai:
-            mock_genai.GenerativeModel.return_value = mock_model
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
             result = await filter_articles(articles, ["AI"], "fake-key")
 
         assert len(result) == 2
@@ -235,26 +230,26 @@ class TestPodcast:
     def test_parse_transcript_basic(self):
         """Parse Podcastfy XML tags into ScriptLines."""
         text = textwrap.dedent("""\
-            <Person1>大家好，欢迎收听</Person1>
-            <Person2>今天聊点科技新闻</Person2>
-            <Person1>第一个话题是 AI</Person1>
+            <Person1>\u5927\u5bb6\u597d\uff0c\u6b22\u8fce\u6536\u542c</Person1>
+            <Person2>\u4eca\u5929\u804a\u70b9\u79d1\u6280\u65b0\u95fb</Person2>
+            <Person1>\u7b2c\u4e00\u4e2a\u8bdd\u9898\u662f AI</Person1>
         """)
         lines = _parse_transcript(text)
         assert len(lines) == 3
-        assert lines[0] == ScriptLine(speaker="Alex", text="大家好，欢迎收听")
-        assert lines[1] == ScriptLine(speaker="Jordan", text="今天聊点科技新闻")
-        assert lines[2] == ScriptLine(speaker="Alex", text="第一个话题是 AI")
+        assert lines[0] == ScriptLine(speaker="Alex", text="\u5927\u5bb6\u597d\uff0c\u6b22\u8fce\u6536\u542c")
+        assert lines[1] == ScriptLine(speaker="Jordan", text="\u4eca\u5929\u804a\u70b9\u79d1\u6280\u65b0\u95fb")
+        assert lines[2] == ScriptLine(speaker="Alex", text="\u7b2c\u4e00\u4e2a\u8bdd\u9898\u662f AI")
 
     def test_parse_transcript_multiline_content(self):
         """Tags with multiline content are parsed correctly."""
-        text = "<Person1>第一行\n第二行\n第三行</Person1>"
+        text = "<Person1>\u7b2c\u4e00\u884c\n\u7b2c\u4e8c\u884c\n\u7b2c\u4e09\u884c</Person1>"
         lines = _parse_transcript(text)
         assert len(lines) == 1
-        assert "第一行\n第二行\n第三行" in lines[0]["text"]
+        assert "\u7b2c\u4e00\u884c\n\u7b2c\u4e8c\u884c\n\u7b2c\u4e09\u884c" in lines[0]["text"]
 
     def test_parse_transcript_empty_tags_skipped(self):
         """Empty tags produce no ScriptLines."""
-        text = "<Person1></Person1>\n<Person2>有内容</Person2>"
+        text = "<Person1></Person1>\n<Person2>\u6709\u5185\u5bb9</Person2>"
         lines = _parse_transcript(text)
         assert len(lines) == 1
         assert lines[0]["speaker"] == "Jordan"
@@ -280,7 +275,7 @@ class TestPodcast:
         """generate_script calls Podcastfy and parses the result."""
         transcript_file = tmp_path / "transcript.txt"
         transcript_file.write_text(
-            "<Person1>你好</Person1>\n<Person2>大家好</Person2>",
+            "<Person1>\u4f60\u597d</Person1>\n<Person2>\u5927\u5bb6\u597d</Person2>",
             encoding="utf-8",
         )
 
@@ -310,85 +305,33 @@ class TestPodcast:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class TestTTS:
-    def test_synthesize_one_success(self):
-        """_synthesize_one calls GLM TTS and writes to file."""
-        mock_response = MagicMock()
-        mock_client = MagicMock()
-        mock_client.audio.speech.create.return_value = mock_response
-
-        line = ScriptLine(speaker="Alex", text="测试文本")
-        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
-
-        path = _synthesize_one(mock_client, line, voice_map, 0)
-
-        mock_client.audio.speech.create.assert_called_once_with(
-            model="glm-tts", voice="male-voice", input="测试文本"
-        )
-        mock_response.stream_to_file.assert_called_once_with(path)
-        assert str(path).endswith(".wav")
-
-    def test_synthesize_one_uses_female_voice(self):
-        """Jordan lines use the female voice."""
-        mock_response = MagicMock()
-        mock_client = MagicMock()
-        mock_client.audio.speech.create.return_value = mock_response
-
-        line = ScriptLine(speaker="Jordan", text="你好")
-        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
-
-        _synthesize_one(mock_client, line, voice_map, 0)
-
-        mock_client.audio.speech.create.assert_called_once_with(
-            model="glm-tts", voice="female-voice", input="你好"
-        )
-
-    def test_synthesize_one_retries_on_failure(self):
-        """_synthesize_one retries up to 3 times."""
-        mock_response = MagicMock()
-        mock_client = MagicMock()
-        mock_client.audio.speech.create.side_effect = [
-            RuntimeError("fail 1"),
-            RuntimeError("fail 2"),
-            mock_response,
-        ]
-
-        line = ScriptLine(speaker="Alex", text="重试测试")
-        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
-
-        path = _synthesize_one(mock_client, line, voice_map, 0)
-        assert mock_client.audio.speech.create.call_count == 3
-        mock_response.stream_to_file.assert_called_once()
-
-    def test_synthesize_one_raises_after_max_retries(self):
-        """_synthesize_one raises after 3 failures."""
-        mock_client = MagicMock()
-        mock_client.audio.speech.create.side_effect = RuntimeError("always fails")
-
-        line = ScriptLine(speaker="Alex", text="失败")
-        voice_map = {"Alex": "male-voice", "Jordan": "female-voice"}
-
-        with pytest.raises(RuntimeError, match="always fails"):
-            _synthesize_one(mock_client, line, voice_map, 0)
-        assert mock_client.audio.speech.create.call_count == 3
-
     @pytest.mark.anyio
-    async def test_synthesize_lines_maps_voices(self):
-        """synthesize_lines creates tasks for each line with correct voices."""
-        settings = _test_settings()
+    async def test_synthesize_lines_inworld(self):
+        """synthesize_lines with inworld provider calls _synthesize_inworld for each line."""
+        settings = _test_settings(tts_provider="inworld", inworld_api_key="fake-key")
         lines = [
-            ScriptLine(speaker="Alex", text="你好"),
-            ScriptLine(speaker="Jordan", text="大家好"),
+            ScriptLine(speaker="Alex", text="\u4f60\u597d"),
+            ScriptLine(speaker="Jordan", text="\u5927\u5bb6\u597d"),
         ]
 
-        mock_response = MagicMock()
-        mock_client = MagicMock()
-        mock_client.audio.speech.create.return_value = mock_response
-
-        with patch("app.services.tts.ZhipuAI", return_value=mock_client):
+        with patch("app.services.tts._synthesize_inworld", return_value=Path("/tmp/tts.wav")) as mock_synth:
             paths = await synthesize_lines(lines, settings)
 
         assert len(paths) == 2
-        assert mock_client.audio.speech.create.call_count == 2
+
+    @pytest.mark.anyio
+    async def test_synthesize_lines_google(self):
+        """synthesize_lines with google provider calls _synthesize_google for each line."""
+        settings = _test_settings(tts_provider="google", gemini_api_key="fake-key")
+        lines = [
+            ScriptLine(speaker="Alex", text="\u4f60\u597d"),
+            ScriptLine(speaker="Jordan", text="\u5927\u5bb6\u597d"),
+        ]
+
+        with patch("app.services.tts._synthesize_google", return_value=Path("/tmp/tts.wav")) as mock_synth:
+            paths = await synthesize_lines(lines, settings)
+
+        assert len(paths) == 2
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -537,17 +480,31 @@ class TestStorage:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class TestConfig:
-    def test_tts_voice_defaults(self):
-        s = Settings(database_url="sqlite://", session_secret="x")
-        assert s.tts_voice_male == "male"
-        assert s.tts_voice_female == "female"
-
-    def test_tts_voice_custom(self):
+    def test_inworld_voice_defaults(self):
         s = Settings(
-            database_url="sqlite://",
+            cloudflare_account_id="x",
+            cloudflare_api_token="x",
+            d1_database_id="x",
             session_secret="x",
-            tts_voice_male="custom-male",
-            tts_voice_female="custom-female",
         )
-        assert s.tts_voice_male == "custom-male"
-        assert s.tts_voice_female == "custom-female"
+        assert s.inworld_tts_voice_male == "Theodore"
+        assert s.inworld_tts_voice_female == "Sarah"
+
+    def test_google_tts_voice_defaults(self):
+        s = Settings(
+            cloudflare_account_id="x",
+            cloudflare_api_token="x",
+            d1_database_id="x",
+            session_secret="x",
+        )
+        assert s.google_tts_voice_male == "Puck"
+        assert s.google_tts_voice_female == "Aoede"
+
+    def test_tts_provider_default(self):
+        s = Settings(
+            cloudflare_account_id="x",
+            cloudflare_api_token="x",
+            d1_database_id="x",
+            session_secret="x",
+        )
+        assert s.tts_provider == "inworld"

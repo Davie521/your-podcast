@@ -1,142 +1,132 @@
-import Image from 'next/image';
-import Link from 'next/link';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/BottomNav';
+import { ChevronRightIcon } from '@/components/icons/ChevronRightIcon';
+import { useAudioState } from '@/hooks/useAudioState';
+import { useAuth } from '@/hooks/useAuth';
+import { useAuthDispatch } from '@/hooks/useAuthDispatch';
 
-interface FavoriteEpisode {
-  id: string;
-  show: string;
-  episode: string;
-  imageUrl?: string;
-  imageColor: string;
-}
-
-const FAVORITES: FavoriteEpisode[] = [
-  {
-    id: '1',
-    show: 'Design Matters with Debbie Millman',
-    episode: 'Marina Willer: The Art of Identity',
-    imageColor: '#009689',
-  },
-  {
-    id: '2',
-    show: 'The Daily',
-    episode: 'Understanding the Shift',
-    imageColor: '#432dd7',
-  },
-  {
-    id: '3',
-    show: 'The Ezra Klein Show',
-    episode: 'How AI Changes Work',
-    imageColor: '#ff637e',
-  },
-  {
-    id: '4',
-    show: 'HBR IdeaCast',
-    episode: 'Leading Through Change',
-    imageColor: '#155dfc',
-  },
-];
-
-const LISTEN_LATER: FavoriteEpisode[] = [
-  {
-    id: '1',
-    show: 'Design Matters with Debbie Millman',
-    episode: 'Marina Willer: The Art of Identity',
-    imageColor: '#009689',
-  },
-  {
-    id: '2',
-    show: 'The Daily',
-    episode: 'Understanding the Shift',
-    imageColor: '#432dd7',
-  },
-  {
-    id: '3',
-    show: 'The Ezra Klein Show',
-    episode: 'How AI Changes Work',
-    imageColor: '#ff637e',
-  },
-];
-
-function EpisodeCard({ show, episode, imageUrl, imageColor }: Omit<FavoriteEpisode, 'id'>) {
+function SettingRow({
+  label,
+  subtitle,
+}: {
+  readonly label: string;
+  readonly subtitle?: string;
+}) {
   return (
-    <div className="flex gap-3 items-start border border-[#e0e0d8] rounded-[10px] p-3">
-      <div
-        className="relative size-12 shrink-0 rounded-[4px] overflow-hidden"
-        style={{ backgroundColor: imageColor }}
-      >
-        {imageUrl && (
-          <Image src={imageUrl} alt={show} fill className="object-cover" />
+    <button
+      type="button"
+      className="flex w-full items-center justify-between py-4 border-b border-border-warm tap-feedback"
+    >
+      <div className="text-left">
+        <p className="font-serif text-[16px] leading-6 text-[#111]">{label}</p>
+        {subtitle && (
+          <p className="font-inter text-[12px] text-[#666] mt-0.5">{subtitle}</p>
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="font-serif font-bold text-[12px] leading-3 text-[#111] truncate">{show}</h4>
-        <p className="font-serif text-[10px] leading-[10px] text-[rgba(17,17,17,0.8)] mt-1 truncate">{episode}</p>
-      </div>
-    </div>
+      <ChevronRightIcon className="size-[18px] text-[#c0c0b5]" />
+    </button>
   );
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const { currentEpisode } = useAudioState();
+  const { status, user } = useAuth();
+  const { logout } = useAuthDispatch();
+  const hasPlayer = currentEpisode !== null;
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    }
+  }, [status, router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#111] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated' || !user) {
+    return null;
+  }
+
+  const initial = user.name.charAt(0).toUpperCase();
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/login');
+  }
+
   return (
     <div className="min-h-screen bg-cream">
-      <main className="mx-auto w-full max-w-[428px] pb-24">
-        {/* Settings button */}
-        <div className="flex justify-end px-6 pt-4">
-          <Link href="/settings" aria-label="Settings" className="p-2 text-[#111]">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-              <path
-                d="M11 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M18.2 13.8a1.5 1.5 0 0 0 .3 1.7l.05.05a1.8 1.8 0 0 1-2.54 2.54l-.05-.05a1.5 1.5 0 0 0-1.7-.3 1.5 1.5 0 0 0-.91 1.38V19a1.8 1.8 0 0 1-3.6 0v-.07A1.5 1.5 0 0 0 8.8 17.5a1.5 1.5 0 0 0-1.7.3l-.05.05a1.8 1.8 0 1 1-2.54-2.54l.05-.05a1.5 1.5 0 0 0 .3-1.7 1.5 1.5 0 0 0-1.38-.91H3a1.8 1.8 0 0 1 0-3.6h.07A1.5 1.5 0 0 0 4.5 8.8a1.5 1.5 0 0 0-.3-1.7l-.05-.05a1.8 1.8 0 1 1 2.54-2.54l.05.05a1.5 1.5 0 0 0 1.7.3h.07A1.5 1.5 0 0 0 9.42 3.5V3a1.8 1.8 0 0 1 3.6 0v.07a1.5 1.5 0 0 0 .91 1.38 1.5 1.5 0 0 0 1.7-.3l.05-.05a1.8 1.8 0 1 1 2.54 2.54l-.05.05a1.5 1.5 0 0 0-.3 1.7v.07a1.5 1.5 0 0 0 1.38.91H19a1.8 1.8 0 0 1 0 3.6h-.07a1.5 1.5 0 0 0-1.38.91Z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
+      <main
+        className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}
+      >
+        {/* Header */}
+        <div className="flex flex-col gap-3 mb-10 animate-fade-in">
+          <h1 className="font-serif text-4xl leading-10 text-[#111]">Profile</h1>
+          <p className="font-serif italic text-[14px] text-[#666] leading-5 opacity-70">
+            Your account &amp; preferences
+          </p>
         </div>
 
-        {/* Avatar + name */}
-        <div className="flex flex-col items-center gap-4 px-6 mt-2 mb-8">
-          <div className="size-24 rounded-full border-2 border-[rgba(17,17,17,0.1)] shadow-sm overflow-hidden bg-[#e0e0d8]" />
-          <div className="flex flex-col items-center gap-0">
-            <h2 className="font-serif font-bold text-[24px] leading-8 text-[#111]">Eleanor Davies</h2>
-            <p className="font-serif text-[16px] leading-6 text-[#666]">@eleanor.d</p>
+        {/* Profile row */}
+        <button
+          type="button"
+          aria-label="View profile"
+          className="flex w-full items-center gap-4 pb-4 border-b border-border-warm tap-feedback animate-fade-in anim-delay-1"
+        >
+          {user.avatar_url ? (
+            /* Native img: next/image incompatible with static export for external OAuth avatar URLs */
+            <img
+              src={user.avatar_url}
+              alt={user.name}
+              className="size-16 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="size-16 shrink-0 rounded-full bg-border-warm flex items-center justify-center">
+              <span className="font-serif text-[24px] text-[#111]/30 select-none leading-none">
+                {initial}
+              </span>
+            </div>
+          )}
+          <div className="flex-1 min-w-0 text-left">
+            <p className="font-serif font-bold text-[16px] leading-5 text-[#111]">{user.name}</p>
+            <p className="font-inter text-[12px] text-[#666] mt-1">{user.email}</p>
           </div>
+          <ChevronRightIcon className="size-[18px] text-[#c0c0b5]" />
+        </button>
+
+        {/* General section */}
+        <section className="mt-8 animate-fade-in anim-delay-2">
+          <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
+            General
+          </h2>
+          <SettingRow label="Interests" subtitle="Coming soon" />
+          <SettingRow label="Help & FAQ" />
+        </section>
+
+        {/* Log Out */}
+        <div className="mt-12 flex justify-center animate-fade-in anim-delay-3">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="font-serif text-[14px] text-[#c07060] tap-feedback"
+          >
+            Log Out
+          </button>
         </div>
 
-        <div className="px-6 flex flex-col gap-8">
-          {/* Favorites */}
-          <section>
-            <h3 className="font-serif font-bold text-[10px] text-[rgba(17,17,17,0.8)] tracking-[2px] uppercase mb-4">
-              FAVORITES
-            </h3>
-            <div className="flex flex-col gap-4">
-              {FAVORITES.map((ep) => (
-                <EpisodeCard key={ep.id} {...ep} />
-              ))}
-            </div>
-          </section>
-
-          {/* Listen Later */}
-          <section>
-            <h3 className="font-serif font-bold text-[10px] text-[rgba(17,17,17,0.8)] tracking-[2px] uppercase mb-4">
-              LISTEN LATER
-            </h3>
-            <div className="flex flex-col gap-4">
-              {LISTEN_LATER.map((ep) => (
-                <EpisodeCard key={ep.id} {...ep} />
-              ))}
-            </div>
-          </section>
-        </div>
+        {/* Version */}
+        <p className="mt-4 text-center font-inter text-[10px] text-[#ccc] tracking-[0.5px] animate-fade-in anim-delay-3">
+          v0.1.0
+        </p>
       </main>
 
       <BottomNav />

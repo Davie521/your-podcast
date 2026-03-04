@@ -102,11 +102,15 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 - 全球 CDN，英国和国内访问都快
 - S3 兼容 API，代码迁移容易
 
-**4. SQLite + Litestream 作为数据库**
+**4. Cloudflare D1 作为数据库**
 
-- 零运维，无额外费用
-- Litestream 自动备份到 R2，数据安全有保障
-- 播客元信息数据量小，SQLite 完全够用
+- SQLite 兼容语法，零运维，托管在 Cloudflare 边缘
+- 与 R2 同在 Cloudflare 生态，统一管理访问权限
+- 播客元信息数据量小，D1 完全够用
+- 后端通过 Cloudflare D1 REST API 访问（`https://api.cloudflare.com/client/v4/accounts/{id}/d1/database/{id}/query`）
+- 已完成从 SQLite/SQLAlchemy 迁移到 D1 REST API（issue #42）
+- 后端使用 `app/services/d1.py`（D1Client）+ `app/d1_database.py`（查询层）访问 D1
+- 初始化表结构：`python init_d1.py`
 
 ### 排除理由
 
@@ -134,11 +138,11 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 │  │feedparser │  │ 筛选8-10 │  │ 对话脚本   │  │ 逐句合成  │   │
 │  └──────────┘  └──────────┘  └───────────┘  └────┬─────┘   │
 │                                                    │         │
-│  ┌──────────┐                    ┌────────────────┘         │
-│  │ SQLite   │← 存元信息          ▼                          │
-│  │ Litestream│                 ffmpeg 合并 MP3               │
-│  │  备份到R2 │                    │                          │
-│  └──────────┘                    ▼                          │
+│  ┌──────────────┐                ┌────────────────┘         │
+│  │ Cloudflare D1│← 存元信息       ▼                          │
+│  │ (REST API)   │             ffmpeg 合并 MP3                │
+│  └──────────────┘                │                          │
+│                                  ▼                          │
 │                           上传 MP3 到 R2                     │
 └──────────────────────────────────────────────────────────---┘
                       ▼
@@ -165,10 +169,10 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 | RSS | feedparser | 成熟稳定的 RSS 解析库 |
 | AI 筛选 | Google Gemini | 从全部文章挑 8-10 篇最有价值的 |
 | 脚本生成 | Podcastfy（备选 Gemini prompt） | 生成双主持人对话脚本 |
-| TTS | GLM 智谱 | 中文效果好，支持双声线 |
+| TTS | Inworld TTS（默认）/ Google Gemini TTS（备选） | 双声线 Alex + Jordan，支持切换 |
 | 音频处理 | ffmpeg (pydub) | 拼接语音片段为 MP3 |
 | 文件存储 | Cloudflare R2 | 免费 10GB，全球 CDN，S3 兼容 |
-| 数据库 | SQLite + Litestream | 零运维，自动备份到 R2 |
+| 数据库 | Cloudflare D1 | SQLite 兼容，托管在 Cloudflare 边缘，与 R2 同生态 |
 | 定时任务 | GitHub Actions cron | 免费 2000 分钟/月 |
 
 ## 费用预估

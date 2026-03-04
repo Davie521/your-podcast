@@ -7,34 +7,15 @@ Usage:
 """
 
 import argparse
+import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import Session, select
-
-from app.database import create_db_and_tables, engine
-from app.models import Episode, Source, Task, TranscriptLine, User
+from app import d1_database
+from app.database import create_db_client
+from app.services.d1 import D1Client
 
 SYSTEM_EMAIL = "seed@your-podcast.local"
-
-
-def _get_or_create_seed_user(session: Session) -> User:
-    user = session.exec(select(User).where(User.email == SYSTEM_EMAIL)).first()
-    if user:
-        return user
-    user = User(
-        id=str(uuid.uuid4()),
-        name="Seed User",
-        email=SYSTEM_EMAIL,
-        provider="system",
-        provider_id="seed",
-        interests=["AI", "technology", "programming", "startups"],
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
-
 
 SAMPLE_EPISODES = [
     {
@@ -97,73 +78,103 @@ SAMPLE_EPISODES = [
 ]
 
 
-def seed(session: Session) -> None:
-    user = _get_or_create_seed_user(session)
+async def seed(db: D1Client) -> None:
+    user = await d1_database.get_user_by_email(db, SYSTEM_EMAIL)
+    if not user:
+        user = await d1_database.upsert_user(
+            db,
+            email=SYSTEM_EMAIL,
+            name="Seed User",
+            avatar_url="",
+            provider="system",
+            provider_id="seed",
+        )
+        await d1_database.update_user_interests(
+            db, user["id"], ["AI", "technology", "programming", "startups"]
+        )
+
     now = datetime.now(timezone.utc)
 
     for i, ep_data in enumerate(SAMPLE_EPISODES):
-        ep = Episode(
-            id=str(uuid.uuid4()),
-            title=ep_data["title"],
-            description=ep_data["description"],
-            cover_url=f"https://placehold.co/800x800/6366f1/a855f7.png?text=EP{i + 1}",
-            audio_url=f"https://cdn.example.com/episodes/sample-{i + 1}.mp3",
-            duration=ep_data["duration"],
-            is_public=True,
-            creator_id=user.id,
-            published_at=now - timedelta(days=i),
-        )
-        session.add(ep)
-        session.flush()
+        episode_id = str(uuid.uuid4())
+        published_at = (now - timedelta(days=i)).isoformat()
+
+        episode = {
+            "id": episode_id,
+            "title": ep_data["title"],
+            "description": ep_data["description"],
+            "cover_url": f"https://placehold.co/800x800/6366f1/a855f7.png?text=EP{i + 1}",
+            "audio_url": f"https://cdn.example.com/episodes/sample-{i + 1}.mp3",
+            "duration": ep_data["duration"],
+            "is_public": True,
+            "creator_id": user["id"],
+            "published_at": published_at,
+        }
+
+        # Build batch statements
+        stmts: list[dict] = []
+        stmts.append({
+            "sql": """INSERT INTO episode (id, title, description, cover_url, audio_url, duration, is_public, creator_id, published_at)
+                      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)""",
+            "params": [
+                episode["id"], episode["title"], episode["description"],
+                episode["cover_url"], episode["audio_url"], episode["duration"],
+                episode["creator_id"], episode["published_at"],
+            ],
+        })
 
         for src in ep_data["sources"]:
-            session.add(Source(episode_id=ep.id, **src))
+            stmts.append({
+                "sql": "INSERT INTO source (id, episode_id, title, url, source) VALUES (?, ?, ?, ?, ?)",
+                "params": [str(uuid.uuid4()), episode_id, src["title"], src["url"], src["source"]],
+            })
 
         for j, line in enumerate(ep_data["transcript"]):
-            session.add(TranscriptLine(
-                episode_id=ep.id,
-                line_order=j,
-                speaker=line["speaker"],
-                text=line["text"],
-            ))
+            stmts.append({
+                "sql": "INSERT INTO transcript_line (id, episode_id, line_order, speaker, text) VALUES (?, ?, ?, ?, ?)",
+                "params": [str(uuid.uuid4()), episode_id, j, line["speaker"], line["text"]],
+            })
 
-    session.commit()
-    print(f"Seeded {len(SAMPLE_EPISODES)} episodes for user {user.name} ({user.email})")
+        await db.batch(stmts)
+
+    print(f"Seeded {len(SAMPLE_EPISODES)} episodes for user {user['name']} ({user['email']})")
 
 
-def clear(session: Session) -> None:
-    user = session.exec(select(User).where(User.email == SYSTEM_EMAIL)).first()
+async def clear(db: D1Client) -> None:
+    user = await d1_database.get_user_by_email(db, SYSTEM_EMAIL)
     if not user:
         print("No seed user found, nothing to clear")
         return
 
-    episodes = session.exec(select(Episode).where(Episode.creator_id == user.id)).all()
-    for ep in episodes:
-        for tl in session.exec(select(TranscriptLine).where(TranscriptLine.episode_id == ep.id)).all():
-            session.delete(tl)
-        for src in session.exec(select(Source).where(Source.episode_id == ep.id)).all():
-            session.delete(src)
-        session.delete(ep)
-
-    for task in session.exec(select(Task).where(Task.user_id == user.id)).all():
-        session.delete(task)
-
-    session.delete(user)
-    session.commit()
-    print(f"Cleared all seed data ({len(episodes)} episodes)")
+    # Delete in order respecting foreign keys
+    stmts = [
+        {"sql": "DELETE FROM transcript_line WHERE episode_id IN (SELECT id FROM episode WHERE creator_id = ?)", "params": [user["id"]]},
+        {"sql": "DELETE FROM source WHERE episode_id IN (SELECT id FROM episode WHERE creator_id = ?)", "params": [user["id"]]},
+        {"sql": "DELETE FROM task WHERE user_id = ?", "params": [user["id"]]},
+        {"sql": "DELETE FROM episode WHERE creator_id = ?", "params": [user["id"]]},
+        {"sql": "DELETE FROM user WHERE id = ?", "params": [user["id"]]},
+    ]
+    await db.batch(stmts)
+    print("Cleared all seed data")
 
 
-def main() -> None:
+async def async_main() -> None:
     parser = argparse.ArgumentParser(description="Seed sample podcast data")
     parser.add_argument("--clear", action="store_true", help="Clear seed data before inserting")
     args = parser.parse_args()
 
-    create_db_and_tables()
+    db = create_db_client()
 
-    with Session(engine) as session:
+    try:
         if args.clear:
-            clear(session)
-        seed(session)
+            await clear(db)
+        await seed(db)
+    finally:
+        await db.aclose()
+
+
+def main() -> None:
+    asyncio.run(async_main())
 
 
 if __name__ == "__main__":

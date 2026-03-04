@@ -1,5 +1,6 @@
 import logging
-
+import os
+import socket
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -8,20 +9,21 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
-from app.database import create_db_and_tables
-from app.models import Episode, Source, Task, TranscriptLine, User  # noqa: F401 — register tables
 from app.routers import auth, episodes, generate, onboarding, tasks
 
 logger = logging.getLogger(__name__)
 
+settings = get_settings()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
     yield
+    # Close the shared DB client if it was created
+    import app.database as db_module
+    if db_module._db_client is not None:
+        await db_module._db_client.aclose()
 
-
-settings = get_settings()
 
 app = FastAPI(title="Your Podcast API", lifespan=lifespan)
 
@@ -31,6 +33,20 @@ app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 origins = [
     "http://localhost:3000",
 ]
+
+# In dev, allow LAN origins for mobile testing
+if settings.is_dev:
+    origins.append("http://localhost:3001")
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        if local_ip.startswith(("192.168.", "10.", "172.")):
+            origins.append(f"http://{local_ip}:3000")
+            origins.append(f"http://{local_ip}:3001")
+    except OSError:
+        pass
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,4 +76,4 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "version": "0.2.1"}
+    return {"status": "ok", "version": "0.2.1", "environment": settings.environment}
