@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthDispatch } from '@/hooks/useAuthDispatch';
@@ -85,13 +86,13 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="mt-8 flex items-center justify-center gap-2 font-inter">
-          <a href="/privacy" className="text-[10px] leading-[15px] text-[#666] hover:text-[#111]">
+          <Link href="/privacy" className="text-[10px] leading-[15px] text-[#666] hover:text-[#111]">
             Privacy Policy
-          </a>
+          </Link>
           <span className="text-[10px] leading-[15px] text-[#666]">|</span>
-          <a href="/terms" className="text-[10px] leading-[15px] text-[#666] hover:text-[#111]">
+          <Link href="/terms" className="text-[10px] leading-[15px] text-[#666] hover:text-[#111]">
             Terms of Service
-          </a>
+          </Link>
         </div>
       </div>
     </div>
