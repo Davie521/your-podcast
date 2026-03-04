@@ -4,19 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CompassIcon } from '@/components/icons/CompassIcon';
 import { ShowsIcon } from '@/components/icons/ShowsIcon';
-import { ProfileIcon } from '@/components/icons/ProfileIcon';
 
 const NAV_ITEMS = [
   { href: '/explore', label: 'Explore', icon: CompassIcon },
-  { href: '/shows', label: 'Shows', icon: ShowsIcon },
-  { href: '/profile', label: 'Profile', icon: ProfileIcon },
+  { href: '/shows', label: 'My Shows', icon: ShowsIcon },
 ] as const;
 
 export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 h-17 border-t border-border-warm bg-cream/80 backdrop-blur-sm flex items-center justify-around px-16 z-10">
+    <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 h-17 border-t border-border-warm bg-cream/80 backdrop-blur-sm flex items-center justify-evenly z-10">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href;
         return (

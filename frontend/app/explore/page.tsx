@@ -1,52 +1,57 @@
 'use client';
 
 import { useState } from 'react';
-import { PodcastCard } from '@/components/PodcastCard';
 import { SearchInput } from '@/components/SearchInput';
+import { EpisodeRow } from '@/components/EpisodeRow';
 import { BottomNav } from '@/components/BottomNav';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
-import type { Podcast } from '@/types/podcast';
+import type { Episode } from '@/types/podcast';
 
-const SAMPLE_PODCASTS: Podcast[] = [
+const DISCOVER_EPISODES: Episode[] = [
   {
-    id: '1',
-    title: 'GPT-5 and the Future of Reasoning',
-    author: '@marcus.li / 8 min',
-    description: 'A deep dive into OpenAI\'s latest model and what chain-of-thought reasoning means for developers.',
-    color: '#009689',
-    imageUrl: '/covers/gpt5.png',
-  },
-  {
-    id: '2',
-    title: 'Why Every Startup Needs an AI Strategy',
-    author: '@jenny.w / 12 min',
-    description: 'From YC\'s latest batch to bootstrapped indie hackers — how AI is reshaping the startup playbook.',
-    color: '#432dd7',
-    imageUrl: '/covers/ai-strategy.png',
-  },
-  {
-    id: '3',
-    title: 'The Science of Sleep & Productivity',
-    author: '@sarah.k / 10 min',
-    description: 'Latest neuroscience research on sleep cycles and how to optimize your deep work hours.',
+    id: 'disc-1',
+    title: 'Rust vs Go in 2026: The Definitive Take',
+    subtitle: 'Rust / Go / Performance',
+    creator: '@dev.alex',
+    duration: '9 min',
     color: '#f54900',
-    imageUrl: '/covers/sleep-science.png',
+    imageUrl: '/covers/rust-vs-go.png',
   },
   {
-    id: '4',
-    title: 'How the Fed Rate Cut Reshapes Markets',
-    author: '@finance.guru / 9 min',
-    description: 'Two AI hosts break down the latest Fed decision and what it means for your portfolio and the global economy.',
+    id: 'disc-2',
+    title: 'Quantum Computing Explained Simply',
+    subtitle: 'Quantum / Qubits / Google',
+    creator: '@physics.dan',
+    duration: '11 min',
+    color: '#009689',
+    imageUrl: '/covers/quantum.png',
+  },
+  {
+    id: 'disc-3',
+    title: 'Claude Code and the AI Coding Revolution',
+    subtitle: 'AI / Coding / Agents',
+    creator: '@techie.sam',
+    duration: '14 min',
+    color: '#432dd7',
+    imageUrl: '/covers/claude-coding.png',
+  },
+  {
+    id: 'disc-4',
+    title: 'Are Podcasts Dying or Evolving?',
+    subtitle: 'Media / Audio / Trends',
+    creator: '@media.jan',
+    duration: '8 min',
     color: '#155dfc',
-    imageUrl: '/covers/react-deep.png',
+    imageUrl: '/covers/death-podcasts.png',
   },
   {
-    id: '5',
-    title: 'CRISPR 3.0: Editing the Human Genome',
-    author: '@biotech.nina / 11 min',
-    description: 'From lab breakthroughs to ethical debates — the next frontier of gene editing explained simply.',
+    id: 'disc-5',
+    title: 'The Science of Sleep & Productivity',
+    subtitle: 'Sleep / Focus / Deep Work',
+    creator: '@sarah.k',
+    duration: '10 min',
     color: '#ff637e',
-    imageUrl: '/covers/topic-science.png',
+    imageUrl: '/covers/sleep-science.png',
   },
 ];
 
@@ -54,10 +59,10 @@ export default function ExplorePage() {
   const [search, setSearch] = useState('');
   const { playingId, toggle } = useAudioPlayer();
 
-  const filteredPodcasts = SAMPLE_PODCASTS.filter(
-    (p) =>
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.author.toLowerCase().includes(search.toLowerCase())
+  const filtered = DISCOVER_EPISODES.filter(
+    (ep) =>
+      ep.title.toLowerCase().includes(search.toLowerCase()) ||
+      ep.creator.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -71,22 +76,23 @@ export default function ExplorePage() {
             <SearchInput value={search} onChange={setSearch} />
           </div>
 
-          <div className="flex flex-col gap-6">
-            {filteredPodcasts.length === 0 ? (
+          <div className="flex flex-col gap-4">
+            {filtered.length === 0 ? (
               <p className="font-inter text-sm text-[#666] text-center py-8">
                 No podcasts found.
               </p>
             ) : (
-              filteredPodcasts.map((podcast) => (
-                <PodcastCard
-                  key={podcast.id}
-                  title={podcast.title}
-                  author={podcast.author}
-                  description={podcast.description}
-                  color={podcast.color}
-                  imageUrl={podcast.imageUrl}
-                  isPlaying={playingId === podcast.id}
-                  onPlay={() => toggle(podcast.id, podcast.audioUrl)}
+              filtered.map((ep) => (
+                <EpisodeRow
+                  key={ep.id}
+                  title={ep.title}
+                  subtitle={ep.subtitle}
+                  creator={ep.creator}
+                  duration={ep.duration}
+                  color={ep.color}
+                  imageUrl={ep.imageUrl}
+                  isPlaying={playingId === ep.id}
+                  onPlay={() => toggle(ep.id)}
                 />
               ))
             )}
