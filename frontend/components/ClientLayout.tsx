@@ -2,6 +2,7 @@
 
 import { ViewTransition } from 'react';
 import type { ReactNode } from 'react';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { AudioProvider } from '@/contexts/AudioContext';
 
 interface ClientLayoutProps {
@@ -10,8 +11,10 @@ interface ClientLayoutProps {
 
 export function ClientLayout({ children }: ClientLayoutProps) {
   return (
-    <AudioProvider>
-      <ViewTransition>{children}</ViewTransition>
-    </AudioProvider>
+    <AuthProvider>
+      <AudioProvider>
+        <ViewTransition>{children}</ViewTransition>
+      </AudioProvider>
+    </AuthProvider>
   );
 }
