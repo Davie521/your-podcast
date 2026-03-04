@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAudioState } from '@/hooks/useAudioState';
 import { useAudioDispatch } from '@/hooks/useAudioDispatch';
 import { PlayIcon } from '@/components/icons/PlayIcon';
@@ -46,12 +45,11 @@ export function MiniPlayer() {
           className="relative size-10 shrink-0 rounded-lg overflow-hidden"
           style={{ backgroundColor: currentEpisode.color }}
         >
-          {currentEpisode.imageUrl && (
-            <Image
-              src={currentEpisode.imageUrl}
+          {currentEpisode.coverUrl && (
+            <img
+              src={currentEpisode.coverUrl}
               alt={currentEpisode.title}
-              fill
-              className="object-cover opacity-80"
+              className="absolute inset-0 size-full object-cover opacity-80"
             />
           )}
         </div>
@@ -62,7 +60,7 @@ export function MiniPlayer() {
             {currentEpisode.title}
           </p>
           <p className="font-inter text-xs text-[#666] truncate">
-            {currentEpisode.creator}
+            {currentEpisode.creatorName}
           </p>
         </div>
 

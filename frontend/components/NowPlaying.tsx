@@ -2,10 +2,10 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import type { EpisodeWithSources } from '@/types/audio';
 import { useAudioState } from '@/hooks/useAudioState';
 import { useAudioDispatch } from '@/hooks/useAudioDispatch';
-import { findEpisodeById } from '@/data/episodes';
+import { formatDuration } from '@/lib/format';
 import { ChevronLeftIcon } from '@/components/icons/ChevronLeftIcon';
 import { ProgressBar } from '@/components/ProgressBar';
 import { PlayerControls } from '@/components/PlayerControls';
@@ -13,30 +13,20 @@ import { SourcesList } from '@/components/SourcesList';
 
 
 interface NowPlayingProps {
-  readonly episodeId: string;
+  readonly episode: EpisodeWithSources;
 }
 
-export function NowPlaying({ episodeId }: NowPlayingProps) {
+export function NowPlaying({ episode }: NowPlayingProps) {
   const router = useRouter();
   const { currentEpisode } = useAudioState();
   const { play } = useAudioDispatch();
 
-  const episode = findEpisodeById(episodeId);
-
   // Auto-play if navigating directly to this page and nothing is playing
   useEffect(() => {
-    if (episode && currentEpisode?.id !== episode.id) {
+    if (currentEpisode?.id !== episode.id) {
       play(episode);
     }
   }, [episode, currentEpisode?.id, play]);
-
-  if (!episode) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <p className="font-inter text-[#666]">Episode not found</p>
-      </div>
-    );
-  }
 
   // Use the currently playing episode data if it matches, otherwise use the route episode
   const displayEpisode = currentEpisode?.id === episode.id ? currentEpisode : episode;
@@ -65,13 +55,11 @@ export function NowPlaying({ episodeId }: NowPlayingProps) {
             className="relative w-[70%] aspect-square rounded-2xl overflow-hidden shadow-xl"
             style={{ backgroundColor: displayEpisode.color }}
           >
-            {displayEpisode.imageUrl && (
-              <Image
-                src={displayEpisode.imageUrl}
+            {displayEpisode.coverUrl && (
+              <img
+                src={displayEpisode.coverUrl}
                 alt={displayEpisode.title}
-                fill
-                className="object-cover opacity-80"
-                priority
+                className="absolute inset-0 size-full object-cover opacity-80"
               />
             )}
           </div>
@@ -83,7 +71,7 @@ export function NowPlaying({ episodeId }: NowPlayingProps) {
             {displayEpisode.title}
           </h1>
           <p className="font-inter text-sm text-[#666]">
-            {displayEpisode.creator} &middot; {displayEpisode.duration}
+            {displayEpisode.creatorName} &middot; {formatDuration(displayEpisode.duration)}
           </p>
         </div>
 
@@ -99,7 +87,7 @@ export function NowPlaying({ episodeId }: NowPlayingProps) {
 
         {/* Sources */}
         <div className="mb-4 animate-fade-in anim-delay-4">
-          <SourcesList sources={displayEpisode.sources} />
+          <SourcesList sources={episode.sources} />
         </div>
 
       </div>

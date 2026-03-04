@@ -1,4 +1,6 @@
 import type { User } from '@/types/auth';
+import type { Episode, EpisodeWithSources, Source } from '@/types/audio';
+import { episodeColor } from '@/lib/format';
 
 // ── Base URL ────────────────────────────────────────────────
 
@@ -98,4 +100,92 @@ export function devLogin(): Promise<{ ok: boolean }> {
 export function isLocalDev(): boolean {
   if (typeof window === 'undefined') return process.env.NODE_ENV === 'development';
   return isLocalHost(window.location.hostname);
+}
+
+// ── API response types (snake_case from backend) ───────────
+
+interface ApiEpisode {
+  id: string;
+  title: string;
+  description: string;
+  cover_url: string;
+  audio_url: string;
+  duration: number;
+  is_public: boolean;
+  creator_id: string;
+  creator_name: string;
+  published_at: string;
+}
+
+interface ApiSource {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+}
+
+interface ApiEpisodeDetail extends ApiEpisode {
+  sources: ApiSource[];
+}
+
+interface ApiEpisodeListResponse {
+  episodes: ApiEpisode[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+// ── Adapters (snake_case → camelCase) ──────────────────────
+
+function toEpisode(raw: ApiEpisode): Episode {
+  return {
+    id: raw.id,
+    title: raw.title,
+    description: raw.description,
+    coverUrl: raw.cover_url,
+    audioUrl: raw.audio_url,
+    duration: raw.duration,
+    isPublic: raw.is_public,
+    creatorId: raw.creator_id,
+    creatorName: raw.creator_name,
+    publishedAt: raw.published_at,
+    color: episodeColor(raw.id),
+  };
+}
+
+function toSource(raw: ApiSource): Source {
+  return { id: raw.id, title: raw.title, url: raw.url, source: raw.source };
+}
+
+function toEpisodeWithSources(raw: ApiEpisodeDetail): EpisodeWithSources {
+  return {
+    ...toEpisode(raw),
+    sources: raw.sources.map(toSource),
+  };
+}
+
+// ── Episode fetch helpers ──────────────────────────────────
+
+export interface EpisodeListResult {
+  episodes: Episode[];
+  total: number;
+}
+
+export async function fetchEpisodes(limit = 20, offset = 0): Promise<EpisodeListResult> {
+  const data = await request<ApiEpisodeListResponse>(
+    `/api/episodes?limit=${limit}&offset=${offset}`,
+  );
+  return { episodes: data.episodes.map(toEpisode), total: data.total };
+}
+
+export async function fetchMyEpisodes(limit = 20, offset = 0): Promise<EpisodeListResult> {
+  const data = await request<ApiEpisodeListResponse>(
+    `/api/episodes/me?limit=${limit}&offset=${offset}`,
+  );
+  return { episodes: data.episodes.map(toEpisode), total: data.total };
+}
+
+export async function fetchEpisodeDetail(id: string): Promise<EpisodeWithSources> {
+  const data = await request<ApiEpisodeDetail>(`/api/episodes/${id}`);
+  return toEpisodeWithSources(data);
 }

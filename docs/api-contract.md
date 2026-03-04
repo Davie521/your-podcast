@@ -27,10 +27,9 @@
 | `duration`     | int       | Length in seconds                       |
 | `is_public`    | bool      | Visible in public feed                 |
 | `creator_id`   | uuid      | User who triggered generation          |
-| `creator`      | object    | `{ name, avatar_url }` — included in list responses |
+| `creator_name` | string    | Creator display name (from JOIN)       |
 | `published_at` | string    | ISO 8601 UTC                           |
 | `sources`      | Source[]  | Articles that went into this episode (detail only) |
-| `transcript`   | Line[]    | Dialogue script (detail only)          |
 
 ### Source (nested in Episode detail)
 
@@ -39,13 +38,6 @@
 | `title`  | string | Article title            |
 | `url`    | string | Link to original article |
 | `source` | string | Feed name (e.g. "Hacker News") |
-
-### Line (nested in Episode detail)
-
-| Field    | Type   | Notes                     |
-| -------- | ------ | ------------------------- |
-| `speaker`| string | `Alex` or `Jordan`        |
-| `text`   | string | Dialogue line             |
 
 ---
 
@@ -185,7 +177,7 @@ Public feed — all public episodes, newest first. No auth required.
       "duration": 360,
       "is_public": true,
       "creator_id": "...",
-      "creator": { "name": "Albert", "avatar_url": "https://..." },
+      "creator_name": "Albert",
       "published_at": "2026-03-01T08:00:00Z"
     }
   ],
@@ -207,7 +199,7 @@ Current user's episodes (public + private). Requires auth.
 
 ### `GET /api/episodes/{id}`
 
-Single episode with full detail (transcript + sources). No auth required for public episodes; auth required for private episodes owned by the user.
+Single episode with full detail (sources). No auth required for public episodes; auth required for private episodes owned by the user.
 
 **Response `200`:**
 
@@ -221,20 +213,15 @@ Single episode with full detail (transcript + sources). No auth required for pub
   "duration": 360,
   "is_public": true,
   "creator_id": "...",
-  "creator": { "name": "Albert", "avatar_url": "https://..." },
+  "creator_name": "Albert",
   "published_at": "2026-03-01T08:00:00Z",
   "sources": [
     { "title": "Article title", "url": "https://...", "source": "Hacker News" }
-  ],
-  "transcript": [
-    { "speaker": "Alex", "text": "大家好，欢迎收听今天的科技早报..." },
-    { "speaker": "Jordan", "text": "今天我们来聊聊..." }
   ]
 }
 ```
 
-**Response `403`:** private episode, not the owner.
-**Response `404`:** episode not found.
+**Response `404`:** episode not found or private episode not owned by user.
 
 ---
 
@@ -309,5 +296,5 @@ Poll generation progress. Requires auth (only task owner can view).
 | Episode visibility | `is_public` flag              | Public feed + private episodes in one model  |
 | Async generation | Polling (`/api/tasks`)          | Simpler than SSE/WebSocket to start          |
 | Pagination       | `limit` / `offset`              | Simple; switch to cursor-based if needed     |
-| Episode detail   | Separate endpoint with transcript/sources | Keep list response lightweight     |
+| Episode detail   | Separate endpoint with sources   | Keep list response lightweight     |
 | Date format      | ISO 8601 UTC                    | Standard, no timezone ambiguity              |
