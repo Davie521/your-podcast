@@ -1,4 +1,10 @@
-"""Database schema definitions shared by init_d1.py and LocalSQLiteClient."""
+"""Database schema definitions.
+
+NOTE: These definitions are kept as a reference. The authoritative schema
+is managed via Wrangler D1 migrations in the migrations/ directory.
+For local development, use: python migrate.py
+For production D1, use: npx wrangler d1 migrations apply podcast-app-db --remote
+"""
 
 SCHEMA_STATEMENTS = [
     """CREATE TABLE IF NOT EXISTS user (

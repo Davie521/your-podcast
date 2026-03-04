@@ -53,3 +53,6 @@ jobs:
 
       - name: Check import
         run: uv run python -c "from app.main import app; print('OK')"
+
+      - name: Verify migrations apply to fresh SQLite
+        run: uv run python migrate.py && uv run python migrate.py --status

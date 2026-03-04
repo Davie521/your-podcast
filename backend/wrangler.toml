@@ -1,0 +1,11 @@
+# Wrangler configuration for D1 migrations only.
+# This project does NOT deploy a Cloudflare Worker — wrangler is used
+# solely for its `d1 migrations` commands.
+name = "podcast-app"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "podcast-app-db"
+database_id = "91b093fb-bb52-4a89-b60f-8548034e3193"
+migrations_dir = "migrations"

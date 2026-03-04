@@ -38,7 +38,8 @@ docs/              # 架构决策文档
   - `storage.py` — R2 上传（boto3 S3 兼容）
   - `cover.py` — 播客封面生成（渐变色占位图）
   - `pipeline.py` — 全流程编排（RSS → 筛选 → 脚本 → TTS → 合并 → 上传 → 入库）
-- CLI: `generate.py` — 手动生成播客；`seed.py` — 填充测试数据；`init_d1.py` — 初始化 D1 表结构
+- 迁移: `wrangler.toml` (D1 配置) + `migrations/` (SQL 迁移文件) + `migrate.py` (本地 SQLite runner)
+- CLI: `generate.py` — 手动生成播客；`seed.py` — 填充测试数据；`init_d1.py` — (deprecated) 初始化 D1 表结构
 - 完整 API: `/api/health`, `/api/auth/*`, `/api/episodes`, `/api/episodes/me`, `/api/episodes/{id}`, `/api/generate`, `/api/tasks/{id}`, `/api/onboarding/interests`
 
 ## 前端 (frontend/)
@@ -78,14 +79,19 @@ uvicorn app.main:app --reload
 # 前端
 cd frontend && npm install && npm run dev
 
-# 初始化 D1 表结构（首次部署）
-cd backend && python init_d1.py
+# 数据库迁移
+cd backend && python migrate.py            # 本地 SQLite：应用待执行迁移
+cd backend && python migrate.py --status   # 查看迁移状态
+cd backend && npx wrangler d1 migrations apply podcast-app-db --remote  # 生产 D1
+
+# 新增迁移
+# 在 backend/migrations/ 下创建新的 SQL 文件，如 0002_add_column.sql
 
 # 生成播客
 cd backend && python generate.py
 
 # 部署
-railway up                    # 后端
+railway up                    # 后端（CI 会自动跑 D1 迁移）
 cd frontend && vercel         # 前端
 ```
 
@@ -130,5 +136,6 @@ cd frontend && vercel         # 前端
 - 播客生成是长任务（几分钟），后端接口需要异步处理或后台任务
 - TTS 需要逐句调用再用 ffmpeg 拼接，注意错误重试（Inworld 最多 5 次重试）
 - R2 上传使用 boto3 (S3 兼容)，endpoint 指向 Cloudflare
-- **数据库**：已迁移到 Cloudflare D1（通过 REST API 访问），需配置 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `D1_DATABASE_ID`。初始化表结构：`python init_d1.py`
+- **数据库**：Cloudflare D1（通过 REST API 访问），需配置 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `D1_DATABASE_ID`
+- **数据库迁移**：使用 Wrangler D1 migrations（`backend/migrations/` 目录）。生产用 `wrangler d1 migrations apply --remote`，本地用 `python migrate.py`。CI deploy 前自动应用迁移。新增 schema 变更时在 `migrations/` 下创建新的 `.sql` 文件
 - 前端环境变量：`NEXT_PUBLIC_API_URL` 指向 Railway 后端地址（本地开发默认 `http://localhost:8000`）
