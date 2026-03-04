@@ -7,7 +7,8 @@ import { BottomNav } from '@/components/BottomNav';
 import { EpisodeRow } from '@/components/EpisodeRow';
 import { useAudioState } from '@/hooks/useAudioState';
 import { useAudioDispatch } from '@/hooks/useAudioDispatch';
-import { fetchMyEpisodes } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
+import { ApiError, fetchMyEpisodes } from '@/lib/api';
 import { formatDate, formatDuration } from '@/lib/format';
 
 type LoadState = 'loading' | 'loaded' | 'error';
@@ -17,11 +18,19 @@ export default function ShowsPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const { currentEpisode, isPlaying } = useAudioState();
   const { toggle, play } = useAudioDispatch();
+  const { status } = useAuth();
   const router = useRouter();
 
   const hasPlayer = currentEpisode !== null;
 
   useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
     let cancelled = false;
     fetchMyEpisodes()
       .then((result) => {
@@ -29,12 +38,16 @@ export default function ShowsPage() {
         setEpisodes(result.episodes);
         setLoadState('loaded');
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
+        if (err instanceof ApiError && err.status === 401) {
+          router.replace('/login');
+          return;
+        }
         setLoadState('error');
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [status, router]);
 
   return (
     <div className="min-h-screen bg-cream">
@@ -65,7 +78,7 @@ export default function ShowsPage() {
 
         {loadState === 'error' && (
           <p className="font-inter text-sm text-[#666] text-center py-16 animate-fade-in">
-            Sign in to see your podcasts.
+            Failed to load podcasts.
           </p>
         )}
 
