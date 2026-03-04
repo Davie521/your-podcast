@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 
 from app import d1_database
 from app.config import get_settings
-from app.services.d1 import get_d1_client
+from app.database import create_db_client
 from app.services.pipeline import DEFAULT_FEEDS, run_pipeline
 
 logging.basicConfig(
@@ -71,7 +71,7 @@ def resolve_feeds(args: argparse.Namespace, settings_feeds: str) -> list[str]:
 async def async_main() -> None:
     args = parse_args()
     settings = get_settings()
-    db = get_d1_client(settings)
+    db = create_db_client(settings)
 
     feed_urls = resolve_feeds(args, settings.rss_feeds)
     episode_date = args.date or datetime.now(timezone.utc).strftime("%Y-%m-%d")

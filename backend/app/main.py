@@ -1,5 +1,6 @@
 import logging
 import os
+import socket
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -18,10 +19,10 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
-    # Close the shared D1 client if it was created
-    from app.database import _d1_client
-    if _d1_client is not None:
-        await _d1_client.aclose()
+    # Close the shared DB client if it was created
+    import app.database as db_module
+    if db_module._db_client is not None:
+        await db_module._db_client.aclose()
 
 
 app = FastAPI(title="Your Podcast API", lifespan=lifespan)
@@ -34,6 +35,20 @@ origins = [
     "https://your-podcast.vercel.app",
     os.getenv("FRONTEND_URL", ""),
 ]
+
+# In dev, allow LAN origins for mobile testing
+if settings.is_dev:
+    origins.append("http://localhost:3001")
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        if local_ip.startswith(("192.168.", "10.", "172.")):
+            origins.append(f"http://{local_ip}:3000")
+            origins.append(f"http://{local_ip}:3001")
+    except OSError:
+        pass
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,4 +78,4 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "version": "0.2.1"}
+    return {"status": "ok", "version": "0.2.1", "environment": settings.environment}

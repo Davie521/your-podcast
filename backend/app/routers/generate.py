@@ -8,8 +8,9 @@ from app.auth import get_current_user
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.models import TaskStatus
+from app.database import create_db_client
 from app.schemas import TaskResponse
-from app.services.d1 import D1Client, get_d1_client
+from app.services.d1 import D1Client
 
 DEFAULT_FEEDS = [
     "https://feeds.arstechnica.com/arstechnica/index",
@@ -46,24 +47,26 @@ async def _run_in_background(
     episode_date: str,
     settings: Settings,
 ) -> None:
-    """Background task wrapper — creates its own D1 client."""
+    """Background task wrapper — creates its own DB client."""
     from app.services.pipeline import run_pipeline
 
-    db = get_d1_client(settings)
+    db = create_db_client(settings)
+    try:
+        task = await d1_database.get_task_by_id(db, task_id)
+        user = await d1_database.get_user_by_id(db, user_id)
+        if not task or not user:
+            return
 
-    task = await d1_database.get_task_by_id(db, task_id)
-    user = await d1_database.get_user_by_id(db, user_id)
-    if not task or not user:
-        return
-
-    await run_pipeline(
-        user=user,
-        feed_urls=feed_urls,
-        episode_date=episode_date,
-        task_id=task_id,
-        db=db,
-        settings=settings,
-    )
+        await run_pipeline(
+            user=user,
+            feed_urls=feed_urls,
+            episode_date=episode_date,
+            task_id=task_id,
+            db=db,
+            settings=settings,
+        )
+    finally:
+        await db.aclose()
 
 
 @router.post("/generate", response_model=GenerateResponse, status_code=202)
