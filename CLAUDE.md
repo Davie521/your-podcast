@@ -46,7 +46,7 @@ docs/              # 架构决策文档
 - 页面:
   - `app/page.tsx` — 重定向到 /explore
   - `app/explore/page.tsx` — 播客发现页（接入 /api/episodes，API 失败时降级为示例数据）
-  - `app/shows/page.tsx` — Daily Podcast 页（接入 /api/episodes/me，按兴趣生成的播客）
+  - `app/shows/page.tsx` — Daily Podcast 页（需登录，接入 /api/episodes/me，按兴趣生成的播客）
   - `app/episode/[id]/page.tsx` — 播客详情页（接入 /api/episodes/{id}）
   - `app/login/page.tsx` — 登录页（Google/GitHub OAuth）
   - `app/profile/page.tsx` — 个人资料页（需登录，显示用户信息）
