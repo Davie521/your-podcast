@@ -10,10 +10,11 @@ from tests.conftest import _test_settings
 # ── Cookie utility tests ────────────────────────────────────────
 
 
-def test_session_cookie_roundtrip(test_user):
-    token = create_session_cookie(test_user.id, _test_settings)
+@pytest.mark.anyio
+async def test_session_cookie_roundtrip(test_user):
+    token = create_session_cookie(test_user["id"], _test_settings)
     uid = _decode_session(token, _test_settings)
-    assert uid == test_user.id
+    assert uid == test_user["id"]
 
 
 def test_tampered_cookie_returns_none():
@@ -46,8 +47,8 @@ async def test_me_authenticated(authenticated_client, test_user):
     resp = await authenticated_client.get("/api/auth/me")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["id"] == test_user.id
-    assert data["email"] == test_user.email
+    assert data["id"] == test_user["id"]
+    assert data["email"] == test_user["email"]
     assert "stats" in data
     assert data["stats"]["total_episodes"] == 0
     assert data["stats"]["public_episodes"] == 0

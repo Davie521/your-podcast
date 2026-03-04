@@ -4,35 +4,38 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlmodel import Session, select
 
-from app.models import Task, TaskStatus, User
+from app import d1_database
+from app.models import TaskStatus
 
 # Import CLI functions
 from generate import (
-    DEFAULT_FEEDS,
     get_or_create_system_user,
     resolve_feeds,
 )
+from app.services.pipeline import DEFAULT_FEEDS
 
 
 class TestGetOrCreateSystemUser:
-    def test_creates_system_user(self, engine, session):
-        user = get_or_create_system_user(session)
-        assert user.email == "system@your-podcast.local"
-        assert user.name == "System"
-        assert user.provider == "system"
-        assert len(user.interests) > 0
+    @pytest.mark.anyio
+    async def test_creates_system_user(self, db):
+        user = await get_or_create_system_user(db)
+        assert user["email"] == "system@your-podcast.local"
+        assert user["name"] == "System"
+        assert user["provider"] == "system"
+        assert len(user["interests"]) > 0
 
-    def test_returns_existing_system_user(self, engine, session):
-        user1 = get_or_create_system_user(session)
-        user2 = get_or_create_system_user(session)
-        assert user1.id == user2.id
+    @pytest.mark.anyio
+    async def test_returns_existing_system_user(self, db):
+        user1 = await get_or_create_system_user(db)
+        user2 = await get_or_create_system_user(db)
+        assert user1["id"] == user2["id"]
 
-    def test_system_user_has_default_interests(self, engine, session):
-        user = get_or_create_system_user(session)
-        assert "technology" in user.interests
-        assert "AI" in user.interests
+    @pytest.mark.anyio
+    async def test_system_user_has_default_interests(self, db):
+        user = await get_or_create_system_user(db)
+        assert "technology" in user["interests"]
+        assert "AI" in user["interests"]
 
 
 class TestResolveFeeds:
@@ -64,7 +67,7 @@ class TestErrorHandling:
     async def test_health_returns_version(self, client):
         resp = await client.get("/api/health")
         assert resp.status_code == 200
-        assert resp.json()["version"] == "0.2.0"
+        assert resp.json()["version"] == "0.2.1"
 
     @pytest.mark.anyio
     async def test_404_returns_json(self, client):
