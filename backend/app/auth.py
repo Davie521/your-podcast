@@ -6,7 +6,7 @@ from app.database import get_db
 from app.services.d1 import D1Client
 from app import d1_database
 
-SESSION_COOKIE_NAME = "session"
+SESSION_COOKIE_NAME = "podcast_session"
 SESSION_MAX_AGE = 30 * 24 * 3600  # 30 days
 
 
