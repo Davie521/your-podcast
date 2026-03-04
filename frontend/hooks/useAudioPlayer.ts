@@ -33,15 +33,18 @@ export function useAudioPlayer() {
 
     cleanupAudio();
 
-    if (audioUrl) {
-      const audio = new Audio(audioUrl);
-      const onEnded = () => setPlayingId(null);
-      listenerRef.current = onEnded;
-      audio.addEventListener('ended', onEnded);
-      audio.play().catch(() => setPlayingId(null));
-      audioRef.current = audio;
-      setPlayingId(id);
+    if (!audioUrl) {
+      setPlayingId(null);
+      return;
     }
+
+    const audio = new Audio(audioUrl);
+    const onEnded = () => setPlayingId(null);
+    listenerRef.current = onEnded;
+    audio.addEventListener('ended', onEnded);
+    audio.play().catch(() => setPlayingId(null));
+    audioRef.current = audio;
+    setPlayingId(id);
   }, [playingId, cleanupAudio]);
 
   return { playingId, toggle };
