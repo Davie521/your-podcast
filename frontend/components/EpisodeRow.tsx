@@ -3,21 +3,28 @@ import { PlayIcon } from '@/components/icons/PlayIcon';
 import { PauseIcon } from '@/components/icons/PauseIcon';
 
 interface EpisodeRowProps {
-  title: string;
-  subtitle: string;
-  creator: string;
-  duration: string;
-  imageUrl?: string;
-  color: string;
-  isPlaying?: boolean;
-  onPlay?: () => void;
+  readonly title: string;
+  readonly subtitle: string;
+  readonly creator: string;
+  readonly duration: string;
+  readonly imageUrl?: string;
+  readonly color: string;
+  readonly isPlaying?: boolean;
+  readonly onPlay?: () => void;
+  readonly onTap?: () => void;
 }
 
-export function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color, isPlaying = false, onPlay }: EpisodeRowProps) {
+export function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color, isPlaying = false, onPlay, onTap }: EpisodeRowProps) {
   const Icon = isPlaying ? PauseIcon : PlayIcon;
 
   return (
-    <div className="flex gap-4 items-start border-b border-border-warm pb-4">
+    <div
+      className="flex gap-4 items-start border-b border-border-warm pb-4 cursor-pointer tap-feedback"
+      onClick={onTap}
+      role={onTap ? 'button' : undefined}
+      tabIndex={onTap ? 0 : undefined}
+      onKeyDown={onTap ? (e) => { if (e.key === 'Enter') { onTap(); } } : undefined}
+    >
       <div
         className="relative size-20 shrink-0 rounded-[10px] overflow-hidden"
         style={{ backgroundColor: color }}
@@ -39,9 +46,9 @@ export function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color
         <div className="flex items-center self-center shrink-0">
           <button
             type="button"
-            onClick={onPlay}
+            onClick={(e) => { e.stopPropagation(); onPlay(); }}
             aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
-            className="size-10 rounded-full bg-[#111] shadow-[0px_4px_6px_rgba(0,0,0,0.1),0px_2px_4px_rgba(0,0,0,0.1)] flex items-center justify-center pl-0.5"
+            className="size-10 rounded-full bg-[#111] shadow-[0px_4px_6px_rgba(0,0,0,0.1),0px_2px_4px_rgba(0,0,0,0.1)] flex items-center justify-center pl-0.5 transition-transform duration-150 active:scale-90"
           >
             <Icon className="size-4 text-white" />
           </button>
