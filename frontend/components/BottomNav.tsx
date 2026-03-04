@@ -29,7 +29,7 @@ export function BottomNav() {
             }`}
           >
             <Icon className="size-6" />
-            <span className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[1px] leading-[15px]">
+            <span className="font-inter text-[10px] font-bold uppercase tracking-[1px] leading-[15px]">
               {label}
             </span>
           </Link>

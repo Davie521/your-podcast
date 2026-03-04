@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { PlayIcon } from '@/components/icons/PlayIcon';
+import { PauseIcon } from '@/components/icons/PauseIcon';
 
 interface PodcastCardProps {
   title: string;
@@ -7,6 +8,7 @@ interface PodcastCardProps {
   description: string;
   color: string;
   imageUrl?: string;
+  isPlaying?: boolean;
   onPlay?: () => void;
 }
 
@@ -16,8 +18,11 @@ export function PodcastCard({
   description,
   color,
   imageUrl,
+  isPlaying = false,
   onPlay,
 }: PodcastCardProps) {
+  const Icon = isPlaying ? PauseIcon : PlayIcon;
+
   return (
     <div className="flex gap-4 items-start border-b border-border-warm pb-4">
       <div
@@ -41,7 +46,7 @@ export function PodcastCard({
         <p className="font-serif text-xs leading-4 text-[#111]/70 mt-1">
           {author}
         </p>
-        <p className="font-[family-name:var(--font-inter)] text-xs leading-[19.5px] text-[#666] mt-1.5 line-clamp-2">
+        <p className="font-inter text-xs leading-[19.5px] text-[#666] mt-1.5 line-clamp-2">
           {description}
         </p>
       </div>
@@ -50,10 +55,10 @@ export function PodcastCard({
         <button
           type="button"
           onClick={onPlay}
-          aria-label={`Play ${title}`}
+          aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
           className="size-10 rounded-full bg-[#111] shadow-[0px_4px_6px_rgba(0,0,0,0.1),0px_2px_4px_rgba(0,0,0,0.1)] flex items-center justify-center pl-0.5"
         >
-          <PlayIcon className="size-4 text-white" />
+          <Icon className="size-4 text-white" />
         </button>
       </div>
     </div>

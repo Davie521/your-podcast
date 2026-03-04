@@ -18,7 +18,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search...' }: Sear
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label="Search podcasts"
-        className="w-full h-12 rounded-[10px] border border-border-warm bg-transparent pl-12 pr-4 font-[family-name:var(--font-inter)] text-base text-[#111] placeholder:text-[#111]/50 outline-none focus:border-[#111]/30 transition-colors"
+        className="w-full h-12 rounded-[10px] border border-border-warm bg-transparent pl-12 pr-4 font-inter text-base text-[#111] placeholder:text-[#111]/50 outline-none focus:border-[#111]/30 transition-colors"
       />
     </div>
   );
