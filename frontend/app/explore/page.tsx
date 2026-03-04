@@ -7,14 +7,14 @@ import { BottomNav } from '@/components/BottomNav';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import type { Podcast } from '@/types/podcast';
 
-const SAMPLE_PODCASTS: (Podcast & { audio_url?: string })[] = [
+const SAMPLE_PODCASTS: Podcast[] = [
   {
     id: '1',
     title: 'GPT-5 and the Future of Reasoning',
     author: '@marcus.li / 8 min',
     description: 'A deep dive into OpenAI\'s latest model and what chain-of-thought reasoning means for developers.',
     color: '#009689',
-    audio_url: '/audio/sample1.mp3',
+    imageUrl: '/covers/gpt5.png',
   },
   {
     id: '2',
@@ -22,31 +22,31 @@ const SAMPLE_PODCASTS: (Podcast & { audio_url?: string })[] = [
     author: '@jenny.w / 12 min',
     description: 'From YC\'s latest batch to bootstrapped indie hackers — how AI is reshaping the startup playbook.',
     color: '#432dd7',
-    audio_url: '/audio/sample2.mp3',
+    imageUrl: '/covers/ai-strategy.png',
   },
   {
     id: '3',
-    title: 'Rust vs Go in 2026',
-    author: '@dev.alex / 6 min',
-    description: 'Two AI hosts debate which language wins for backend services, WebAssembly, and systems programming.',
-    color: '#ff637e',
-    audio_url: '/audio/sample3.mp3',
-  },
-  {
-    id: '4',
     title: 'The Science of Sleep & Productivity',
     author: '@sarah.k / 10 min',
     description: 'Latest neuroscience research on sleep cycles and how to optimize your deep work hours.',
     color: '#f54900',
-    audio_url: '/audio/sample4.mp3',
+    imageUrl: '/covers/sleep-science.png',
+  },
+  {
+    id: '4',
+    title: 'How the Fed Rate Cut Reshapes Markets',
+    author: '@finance.guru / 9 min',
+    description: 'Two AI hosts break down the latest Fed decision and what it means for your portfolio and the global economy.',
+    color: '#155dfc',
+    imageUrl: '/covers/react-deep.png',
   },
   {
     id: '5',
-    title: 'Inside Apple\'s Vision Pro 2 Launch',
-    author: '@techbrief / 7 min',
-    description: 'Breaking down Apple\'s spatial computing bet and what it means for AR/VR developers.',
-    color: '#155dfc',
-    audio_url: '/audio/sample5.mp3',
+    title: 'CRISPR 3.0: Editing the Human Genome',
+    author: '@biotech.nina / 11 min',
+    description: 'From lab breakthroughs to ethical debates — the next frontier of gene editing explained simply.',
+    color: '#ff637e',
+    imageUrl: '/covers/topic-science.png',
   },
 ];
 
@@ -86,7 +86,7 @@ export default function ExplorePage() {
                   color={podcast.color}
                   imageUrl={podcast.imageUrl}
                   isPlaying={playingId === podcast.id}
-                  onPlay={() => toggle(podcast.id, podcast.audio_url)}
+                  onPlay={() => toggle(podcast.id, podcast.audioUrl)}
                 />
               ))
             )}

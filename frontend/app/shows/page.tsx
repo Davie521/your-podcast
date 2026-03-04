@@ -13,7 +13,6 @@ interface Recommendation {
   color: string;
   imageUrl?: string;
   progress: number;
-  audio_url?: string;
 }
 
 interface RecentEpisode {
@@ -32,24 +31,24 @@ interface Subscription {
 }
 
 const RECOMMENDATIONS: Recommendation[] = [
-  { id: 'rec-1', title: 'GPT-5 and the Future of Reasoning', episode: 'by @marcus.li · 8 min', color: '#009689', progress: 100, audio_url: '/audio/sample1.mp3' },
-  { id: 'rec-2', title: 'Why Every Startup Needs an AI Strategy', episode: 'by @jenny.w · 12 min', color: '#432dd7', progress: 30, audio_url: '/audio/sample2.mp3' },
-  { id: 'rec-3', title: 'Quantum Computing Explained Simply', episode: 'by @physics.dan · 9 min', color: '#f54900', progress: 85, audio_url: '/audio/sample3.mp3' },
+  { id: 'rec-1', title: 'GPT-5 and the Future of Reasoning', episode: 'by @marcus.li · 8 min', color: '#009689', imageUrl: '/covers/gpt5.png', progress: 100 },
+  { id: 'rec-2', title: 'Mars Colony: SpaceX 2026 Update', episode: 'by @space.kate · 13 min', color: '#432dd7', imageUrl: '/covers/vision-pro.png', progress: 30 },
+  { id: 'rec-3', title: 'The Psychology of Spending', episode: 'by @finance.guru · 9 min', color: '#f54900', imageUrl: '/covers/react-deep.png', progress: 85 },
 ];
 
 const RECENT_EPISODES: RecentEpisode[] = [
-  { id: 'recent-1', title: 'How Claude 4 Changes Coding', show: '@dev.alex', duration: '11 min', ago: '2h ago' },
-  { id: 'recent-2', title: 'The Death of Traditional Podcasts', show: '@techbrief', duration: '7 min', ago: '5h ago' },
-  { id: 'recent-3', title: 'React Server Components Deep Dive', show: '@frontend.fm', duration: '14 min', ago: '1 day ago' },
+  { id: 'recent-1', title: 'Rust vs Go in 2026', show: '@dev.alex', duration: '6 min', ago: '2h ago' },
+  { id: 'recent-2', title: 'Inside Y Combinator W26 Batch', show: '@startup.daily', duration: '10 min', ago: '5h ago' },
+  { id: 'recent-3', title: 'CRISPR 3.0: Editing the Human Genome', show: '@biotech.nina', duration: '11 min', ago: '1 day ago' },
 ];
 
 const SUBSCRIPTIONS: Subscription[] = [
-  { id: 'sub-1', title: 'Tech', color: '#009689' },
-  { id: 'sub-2', title: 'Startups', color: '#432dd7' },
-  { id: 'sub-3', title: 'Science', color: '#f54900' },
-  { id: 'sub-4', title: 'Programming', color: '#155dfc' },
-  { id: 'sub-5', title: 'Business', color: '#ff637e' },
-  { id: 'sub-6', title: 'Web Dev', color: '#f59e0b' },
+  { id: 'sub-1', title: 'AI', color: '#009689', imageUrl: '/covers/topic-tech.png' },
+  { id: 'sub-2', title: 'Startups', color: '#432dd7', imageUrl: '/covers/topic-startups.png' },
+  { id: 'sub-3', title: 'Science', color: '#f54900', imageUrl: '/covers/topic-science.png' },
+  { id: 'sub-4', title: 'Programming', color: '#155dfc', imageUrl: '/covers/topic-programming.png' },
+  { id: 'sub-5', title: 'Business', color: '#ff637e', imageUrl: '/covers/topic-business.png' },
+  { id: 'sub-6', title: 'Space', color: '#f59e0b', imageUrl: '/covers/topic-webdev.png' },
 ];
 
 export default function ShowsPage() {
@@ -72,7 +71,7 @@ export default function ShowsPage() {
             Picked For You
           </h2>
           <div className="flex flex-col gap-4">
-            {RECOMMENDATIONS.map(({ id, title, episode, color, imageUrl, progress, audio_url }) => {
+            {RECOMMENDATIONS.map(({ id, title, episode, color, imageUrl, progress }) => {
               const isPlaying = playingId === id;
               const Icon = isPlaying ? PauseIcon : PlayIcon;
               return (
@@ -96,7 +95,7 @@ export default function ShowsPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => toggle(id, audio_url)}
+                      onClick={() => toggle(id)}
                       aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
                       className="absolute right-0 top-3 size-8 rounded-full bg-[#111] shadow-[0px_4px_6px_rgba(0,0,0,0.1),0px_2px_4px_rgba(0,0,0,0.1)] flex items-center justify-center pl-0.5"
                     >

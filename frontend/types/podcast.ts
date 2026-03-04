@@ -5,4 +5,5 @@ export interface Podcast {
   readonly description: string;
   readonly color: string;
   readonly imageUrl?: string;
+  readonly audioUrl?: string;
 }

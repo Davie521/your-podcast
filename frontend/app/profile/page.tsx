@@ -20,49 +20,55 @@ const FAVORITES: SavedEpisode[] = [
     creator: '@marcus.li',
     duration: '8 min',
     color: '#009689',
+    imageUrl: '/covers/gpt5.png',
   },
   {
     id: '2',
-    title: 'Why Every Startup Needs an AI Strategy',
-    subtitle: 'From YC to indie hackers',
-    creator: '@jenny.w',
-    duration: '12 min',
+    title: 'How the Fed Rate Cut Reshapes Markets',
+    subtitle: 'Bonds, stocks, and your wallet',
+    creator: '@finance.guru',
+    duration: '9 min',
     color: '#432dd7',
+    imageUrl: '/covers/ai-strategy.png',
   },
   {
     id: '3',
-    title: 'Rust vs Go in 2026',
-    subtitle: 'Backend, WASM, and systems',
-    creator: '@dev.alex',
-    duration: '6 min',
+    title: 'CRISPR 3.0: Editing the Human Genome',
+    subtitle: 'The ethics of gene therapy',
+    creator: '@biotech.nina',
+    duration: '11 min',
     color: '#ff637e',
+    imageUrl: '/covers/rust-vs-go.png',
   },
   {
     id: '4',
-    title: 'Inside Apple\'s Vision Pro 2 Launch',
-    subtitle: 'Spatial computing for AR/VR devs',
-    creator: '@techbrief',
-    duration: '7 min',
+    title: 'Mars Colony: SpaceX 2026 Update',
+    subtitle: 'Starship, life support, and timelines',
+    creator: '@space.kate',
+    duration: '13 min',
     color: '#155dfc',
+    imageUrl: '/covers/vision-pro.png',
   },
 ];
 
 const LISTEN_LATER: SavedEpisode[] = [
   {
     id: '5',
-    title: 'How Claude 4 Changes Coding',
-    subtitle: 'AI pair programming, evolved',
-    creator: '@dev.alex',
-    duration: '11 min',
+    title: 'Why Every Startup Needs an AI Strategy',
+    subtitle: 'From YC to indie hackers',
+    creator: '@jenny.w',
+    duration: '12 min',
     color: '#f54900',
+    imageUrl: '/covers/claude-coding.png',
   },
   {
     id: '6',
-    title: 'The Death of Traditional Podcasts',
-    subtitle: 'Why short-form AI audio wins',
-    creator: '@techbrief',
-    duration: '7 min',
+    title: 'The Science of Sleep & Productivity',
+    subtitle: 'Optimize your deep work hours',
+    creator: '@sarah.k',
+    duration: '10 min',
     color: '#432dd7',
+    imageUrl: '/covers/death-podcasts.png',
   },
   {
     id: '7',
@@ -71,6 +77,7 @@ const LISTEN_LATER: SavedEpisode[] = [
     creator: '@physics.dan',
     duration: '9 min',
     color: '#009689',
+    imageUrl: '/covers/quantum.png',
   },
 ];
 
@@ -129,7 +136,9 @@ export default function ProfilePage() {
 
         {/* Avatar + name */}
         <div className="flex items-center gap-4 mb-10">
-          <div className="size-16 shrink-0 rounded-full border-2 border-[rgba(17,17,17,0.1)] shadow-sm overflow-hidden bg-[#e0e0d8]" />
+          <div className="relative size-16 shrink-0 rounded-full border-2 border-[rgba(17,17,17,0.1)] shadow-sm overflow-hidden bg-[#e0e0d8]">
+            <Image src="/covers/avatar.png" alt="Alex Chen" fill className="object-cover" />
+          </div>
           <div>
             <h2 className="font-serif font-bold text-[20px] leading-6 text-[#111]">Alex Chen</h2>
             <p className="font-serif text-[14px] leading-5 text-[#666]">@alex.chen</p>

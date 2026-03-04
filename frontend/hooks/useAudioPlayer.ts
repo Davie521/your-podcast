@@ -5,39 +5,47 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 export function useAudioPlayer() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const listenerRef = useRef<(() => void) | null>(null);
+  const playingIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeAttribute('src');
-        audioRef.current.load();
-        audioRef.current = null;
+  playingIdRef.current = playingId;
+
+  const cleanupAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      if (listenerRef.current) {
+        audioRef.current.removeEventListener('ended', listenerRef.current);
+        listenerRef.current = null;
       }
-    };
+      audioRef.current.removeAttribute('src');
+      audioRef.current.load();
+      audioRef.current = null;
+    }
   }, []);
 
+  useEffect(() => {
+    return cleanupAudio;
+  }, [cleanupAudio]);
+
   const toggle = useCallback((id: string, audioUrl?: string) => {
-    if (playingId === id) {
+    if (playingIdRef.current === id) {
       audioRef.current?.pause();
       setPlayingId(null);
       return;
     }
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.removeAttribute('src');
-      audioRef.current.load();
-    }
+    cleanupAudio();
 
     if (audioUrl) {
       const audio = new Audio(audioUrl);
-      audio.addEventListener('ended', () => setPlayingId(null));
+      const onEnded = () => setPlayingId(null);
+      listenerRef.current = onEnded;
+      audio.addEventListener('ended', onEnded);
       audio.play().catch(() => setPlayingId(null));
       audioRef.current = audio;
       setPlayingId(id);
     }
-  }, [playingId]);
+  }, [cleanupAudio]);
 
   return { playingId, toggle };
 }
