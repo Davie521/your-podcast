@@ -34,8 +34,8 @@ export function MiniPlayer() {
       {/* Progress bar */}
       <div className="h-[2px] bg-border-warm">
         <div
-          className="h-full bg-[#111] transition-[width] duration-300 ease-linear"
-          style={{ width: `${progress}%` }}
+          className="h-full transition-[width] duration-300 ease-linear opacity-60"
+          style={{ width: `${progress}%`, backgroundColor: currentEpisode.color }}
         />
       </div>
 
@@ -71,9 +71,10 @@ export function MiniPlayer() {
           type="button"
           onClick={handleToggle}
           aria-label={isPlaying ? 'Pause' : 'Play'}
-          className="size-9 shrink-0 rounded-full bg-[#111] flex items-center justify-center transition-transform duration-150 active:scale-90"
+          className="size-9 shrink-0 rounded-full border-2 flex items-center justify-center transition-transform duration-150 active:scale-90"
+          style={{ borderColor: currentEpisode.color, color: currentEpisode.color }}
         >
-          <Icon className="size-3.5 text-white" />
+          <Icon className="size-3.5" />
         </button>
       </div>
     </Link>

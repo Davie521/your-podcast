@@ -13,7 +13,8 @@ function formatTime(seconds: number): string {
 }
 
 export function ProgressBar() {
-  const { currentTime, duration, isPlaying } = useAudioState();
+  const { currentTime, duration, isPlaying, currentEpisode } = useAudioState();
+  const color = currentEpisode?.color ?? '#111';
   const { seek } = useAudioDispatch();
   const trackRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -116,15 +117,15 @@ export function ProgressBar() {
         <div className="absolute left-0 right-0 h-1 rounded-full bg-border-warm" />
         {/* Filled track */}
         <div
-          className="absolute left-0 h-1 rounded-full bg-[#111] transition-[width] duration-100 ease-linear"
-          style={{ width: `${progress}%` }}
+          className="absolute left-0 h-1 rounded-full transition-[width] duration-100 ease-linear opacity-70"
+          style={{ width: `${progress}%`, backgroundColor: color }}
         />
         {/* Thumb */}
         <div
-          className={`absolute rounded-full bg-[#111] -translate-x-1/2 shadow-sm transition-all duration-150 ${
+          className={`absolute rounded-full -translate-x-1/2 shadow-sm transition-all duration-150 ${
             isDraggingState ? 'size-5 shadow-md' : isPlaying ? 'size-3.5' : 'size-3'
           }`}
-          style={{ left: `${progress}%` }}
+          style={{ left: `${progress}%`, backgroundColor: color, opacity: isDraggingState ? 1 : 0.7 }}
         />
       </div>
 
