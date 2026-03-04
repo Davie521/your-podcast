@@ -177,11 +177,16 @@ async def create_task(
 ) -> dict:
     task_id = _new_id()
     now = _utcnow_iso()
-    await db.execute(
-        """INSERT INTO task (id, user_id, status, progress, episode_id, created_at)
-           VALUES (?, ?, ?, ?, NULL, ?)""",
-        [task_id, user_id, status, progress, now],
-    )
+    try:
+        await db.execute(
+            """INSERT INTO task (id, user_id, status, progress, episode_id, created_at)
+               VALUES (?, ?, ?, ?, NULL, ?)""",
+            [task_id, user_id, status, progress, now],
+        )
+    except (RuntimeError, Exception) as exc:
+        if "UNIQUE constraint" in str(exc) or "idx_task_one_active_per_user" in str(exc):
+            raise ValueError("active task exists") from exc
+        raise
     return {
         "id": task_id,
         "user_id": user_id,

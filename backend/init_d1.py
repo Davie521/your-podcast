@@ -63,6 +63,9 @@ SCHEMA_STATEMENTS = [
         created_at TEXT NOT NULL
     )""",
     "CREATE INDEX IF NOT EXISTS idx_task_user ON task(user_id)",
+    """CREATE UNIQUE INDEX IF NOT EXISTS idx_task_one_active_per_user
+       ON task(user_id)
+       WHERE status IN ('pending', 'processing')""",
 ]
 
 DROP_STATEMENTS = [

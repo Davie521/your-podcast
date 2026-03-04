@@ -55,6 +55,9 @@ CREATE TABLE task (
     episode_id TEXT REFERENCES episode(id),
     created_at TEXT NOT NULL
 );
+CREATE UNIQUE INDEX idx_task_one_active_per_user
+    ON task(user_id)
+    WHERE status IN ('pending', 'processing');
 """
 
 

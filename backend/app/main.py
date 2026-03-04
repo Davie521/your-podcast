@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,17 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-app = FastAPI(title="Your Podcast API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    # Close the shared D1 client if it was created
+    from app.database import _d1_client
+    if _d1_client is not None:
+        await _d1_client.aclose()
+
+
+app = FastAPI(title="Your Podcast API", lifespan=lifespan)
 
 # SessionMiddleware is required by authlib for OAuth state storage
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)

@@ -74,20 +74,18 @@ async def generate_episode(
     db: D1Client = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
-    # Enforce one active task per user
-    active_task = await d1_database.get_active_task(db, current_user["id"])
-    if active_task:
-        raise HTTPException(
-            status_code=409,
-            detail=f"You already have an active task: {active_task['id']}",
-        )
-
     feed_urls = _resolve_feeds(body.feeds, settings)
     episode_date = body.date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    task = await d1_database.create_task(
-        db, user_id=current_user["id"], status="pending", progress="queued"
-    )
+    try:
+        task = await d1_database.create_task(
+            db, user_id=current_user["id"], status="pending", progress="queued"
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=409,
+            detail="You already have an active task",
+        )
 
     background_tasks.add_task(
         _run_in_background,

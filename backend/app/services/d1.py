@@ -11,6 +11,14 @@ logger = logging.getLogger(__name__)
 D1_API_BASE = "https://api.cloudflare.com/client/v4/accounts"
 
 
+def _raise_if_result_failed(result: dict, *, sql: str) -> None:
+    """Check per-statement success in D1 response."""
+    if result.get("success", True):
+        return
+    errors = result.get("errors") or result.get("error") or "unknown"
+    raise RuntimeError(f"D1 statement failed for SQL={sql!r}: {errors}")
+
+
 class D1Client:
     """Wraps the Cloudflare D1 HTTP query API."""
 
@@ -20,6 +28,13 @@ class D1Client:
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
         }
+        self._client = httpx.AsyncClient(
+            timeout=httpx.Timeout(30.0, connect=5.0)
+        )
+
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client."""
+        await self._client.aclose()
 
     async def execute(
         self, sql: str, params: list | None = None
@@ -29,12 +44,11 @@ class D1Client:
         if params:
             body["params"] = params
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                self._url, json=body, headers=self._headers, timeout=30.0
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        resp = await self._client.post(
+            self._url, json=body, headers=self._headers
+        )
+        resp.raise_for_status()
+        data = resp.json()
 
         if not data.get("success"):
             errors = data.get("errors", [])
@@ -43,7 +57,9 @@ class D1Client:
         results = data.get("result", [])
         if not results:
             return []
-        return results[0].get("results", [])
+        first = results[0]
+        _raise_if_result_failed(first, sql=sql)
+        return first.get("results", [])
 
     async def batch(self, statements: list[dict]) -> list[list[dict]]:
         """Execute multiple SQL statements.
@@ -60,44 +76,48 @@ class D1Client:
         if not has_params:
             # Join all SQL into one semicolon-separated string
             combined = "; ".join(s["sql"] for s in statements)
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    self._url,
-                    json={"sql": combined},
-                    headers=self._headers,
-                    timeout=60.0,
-                )
-                resp.raise_for_status()
-                data = resp.json()
+            resp = await self._client.post(
+                self._url,
+                json={"sql": combined},
+                headers=self._headers,
+                timeout=60.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
 
             if not data.get("success"):
                 errors = data.get("errors", [])
                 raise RuntimeError(f"D1 batch failed: {errors}")
 
             all_results = []
-            for result in data.get("result", []):
+            for i, result in enumerate(data.get("result", [])):
+                sql_label = statements[i]["sql"] if i < len(statements) else "<unknown>"
+                _raise_if_result_failed(result, sql=sql_label)
                 all_results.append(result.get("results", []))
             return all_results
 
         # Statements with params — execute sequentially
         all_results = []
-        async with httpx.AsyncClient() as client:
-            for stmt in statements:
-                body: dict = {"sql": stmt["sql"]}
-                if stmt.get("params"):
-                    body["params"] = stmt["params"]
-                resp = await client.post(
-                    self._url, json=body, headers=self._headers, timeout=30.0
-                )
-                resp.raise_for_status()
-                data = resp.json()
+        for stmt in statements:
+            body: dict = {"sql": stmt["sql"]}
+            if stmt.get("params"):
+                body["params"] = stmt["params"]
+            resp = await self._client.post(
+                self._url, json=body, headers=self._headers
+            )
+            resp.raise_for_status()
+            data = resp.json()
 
-                if not data.get("success"):
-                    errors = data.get("errors", [])
-                    raise RuntimeError(f"D1 batch statement failed: {errors}")
+            if not data.get("success"):
+                errors = data.get("errors", [])
+                raise RuntimeError(f"D1 batch statement failed: {errors}")
 
-                results = data.get("result", [])
-                all_results.append(results[0].get("results", []) if results else [])
+            results = data.get("result", [])
+            if results:
+                _raise_if_result_failed(results[0], sql=stmt["sql"])
+                all_results.append(results[0].get("results", []))
+            else:
+                all_results.append([])
         return all_results
 
 
@@ -105,6 +125,15 @@ def get_d1_client(settings: Settings | None = None) -> D1Client:
     """Factory — create a D1Client from app settings."""
     if settings is None:
         settings = get_settings()
+    missing = [
+        name for name, value in {
+            "CLOUDFLARE_ACCOUNT_ID": settings.cloudflare_account_id,
+            "CLOUDFLARE_API_TOKEN": settings.cloudflare_api_token,
+            "D1_DATABASE_ID": settings.d1_database_id,
+        }.items() if not value
+    ]
+    if missing:
+        raise RuntimeError(f"Missing required D1 settings: {', '.join(missing)}")
     return D1Client(
         account_id=settings.cloudflare_account_id,
         api_token=settings.cloudflare_api_token,
