@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     inworld_tts_voice_male: str = "Theodore"
     inworld_tts_voice_female: str = "Sarah"
 
+    # Environment: "development" or "production"
+    # Auto-detected if not set: development when D1 credentials are missing
+    environment: str = ""
+
     # Dev mode — saves MP3 to current directory instead of temp
     dev_mode: bool = False
 
@@ -51,9 +55,18 @@ class Settings(BaseSettings):
     r2_bucket_name: str = ""
     r2_public_url: str = ""
 
+    @property
+    def is_dev(self) -> bool:
+        return self.environment == "development"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    # Auto-detect environment if not explicitly set
+    if not s.environment:
+        has_d1 = bool(s.cloudflare_account_id and s.cloudflare_api_token and s.d1_database_id)
+        s.environment = "production" if has_d1 else "development"
+    return s

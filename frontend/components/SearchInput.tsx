@@ -13,6 +13,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search...' }: Sear
     <div className="relative w-full">
       <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-[18px] text-[#111]/50" />
       <input
+        suppressHydrationWarning
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}

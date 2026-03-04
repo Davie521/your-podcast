@@ -20,6 +20,8 @@ dependencies = [
     "pydub>=0.25",
     # Utilities
     "python-multipart>=0.0.9",
+    # Local dev database
+    "aiosqlite>=0.20",
 ]
 
 [project.optional-dependencies]
