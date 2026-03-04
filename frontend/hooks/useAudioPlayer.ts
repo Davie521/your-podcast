@@ -6,9 +6,6 @@ export function useAudioPlayer() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listenerRef = useRef<(() => void) | null>(null);
-  const playingIdRef = useRef<string | null>(null);
-
-  playingIdRef.current = playingId;
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -28,7 +25,7 @@ export function useAudioPlayer() {
   }, [cleanupAudio]);
 
   const toggle = useCallback((id: string, audioUrl?: string) => {
-    if (playingIdRef.current === id) {
+    if (playingId === id) {
       audioRef.current?.pause();
       setPlayingId(null);
       return;
@@ -45,7 +42,7 @@ export function useAudioPlayer() {
       audioRef.current = audio;
       setPlayingId(id);
     }
-  }, [cleanupAudio]);
+  }, [playingId, cleanupAudio]);
 
   return { playingId, toggle };
 }
