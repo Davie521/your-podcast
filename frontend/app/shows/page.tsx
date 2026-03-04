@@ -22,7 +22,7 @@ export default function ShowsPage() {
     <div className="min-h-screen bg-cream">
       <main className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}>
         {/* Header */}
-        <div className="flex flex-col gap-3 mb-10">
+        <div className="flex flex-col gap-3 mb-10 animate-fade-in">
           <div className="flex items-start justify-between">
             <h1 className="font-serif text-4xl leading-10 text-[#111]">My Shows</h1>
             <Link href="/settings" aria-label="Settings" className="p-1 mt-2 text-[#111]">
@@ -36,11 +36,11 @@ export default function ShowsPage() {
 
         {/* Recent */}
         <section>
-          <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
+          <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4 animate-fade-in anim-delay-1">
             Recent
           </h2>
           <div className="flex flex-col gap-4">
-            {RECENT_EPISODES.map((ep) => (
+            {RECENT_EPISODES.map((ep, index) => (
               <EpisodeRow
                 key={ep.id}
                 title={ep.title}
@@ -55,6 +55,8 @@ export default function ShowsPage() {
                   play(ep);
                   router.push(`/episode/${ep.id}`);
                 }}
+                className="animate-list-item"
+                style={{ animationDelay: `${200 + index * 60}ms` }}
               />
             ))}
           </div>
