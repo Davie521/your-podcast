@@ -4,8 +4,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Database
-    database_url: str = "sqlite:///data/podcast.db"
+    # Cloudflare D1
+    cloudflare_account_id: str = ""
+    cloudflare_api_token: str = ""
+    d1_database_id: str = ""
 
     # Auth - Google OAuth
     google_client_id: str = ""

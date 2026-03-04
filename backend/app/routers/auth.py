@@ -1,11 +1,9 @@
-import uuid
-
 import httpx
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
-from sqlmodel import Session, func, select
 
+from app import d1_database
 from app.auth import (
     SESSION_COOKIE_NAME,
     SESSION_MAX_AGE,
@@ -13,8 +11,8 @@ from app.auth import (
     get_current_user,
 )
 from app.config import Settings, get_settings
-from app.database import get_session
-from app.models import Episode, User
+from app.database import get_db
+from app.services.d1 import D1Client
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -42,8 +40,8 @@ def _register_oauth(settings: Settings) -> None:
         )
 
 
-def _set_session_cookie(response: Response, user: User, settings: Settings) -> None:
-    token = create_session_cookie(user.id, settings)
+def _set_session_cookie(response: Response, user: dict, settings: Settings) -> None:
+    token = create_session_cookie(user["id"], settings)
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=token,
@@ -52,35 +50,6 @@ def _set_session_cookie(response: Response, user: User, settings: Settings) -> N
         samesite="lax",
         secure=not settings.frontend_url.startswith("http://localhost"),
     )
-
-
-def _upsert_user(
-    session: Session,
-    *,
-    email: str,
-    name: str,
-    avatar_url: str,
-    provider: str,
-    provider_id: str,
-) -> User:
-    user = session.exec(select(User).where(User.email == email)).first()
-    if user:
-        user.name = name
-        user.avatar_url = avatar_url
-        # Don't overwrite provider/provider_id on existing users to preserve original identity
-    else:
-        user = User(
-            id=str(uuid.uuid4()),
-            email=email,
-            name=name,
-            avatar_url=avatar_url,
-            provider=provider,
-            provider_id=provider_id,
-        )
-        session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
 
 
 # ── Google OAuth ──────────────────────────────────────────────
@@ -96,7 +65,7 @@ async def google_login(request: Request, settings: Settings = Depends(get_settin
 @router.get("/google/callback")
 async def google_callback(
     request: Request,
-    session: Session = Depends(get_session),
+    db: D1Client = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     _register_oauth(settings)
@@ -110,8 +79,8 @@ async def google_callback(
     if not email or not sub:
         raise HTTPException(status_code=400, detail="Missing email or sub from Google")
 
-    user = _upsert_user(
-        session,
+    user = await d1_database.upsert_user(
+        db,
         email=email,
         name=userinfo.get("name", ""),
         avatar_url=userinfo.get("picture", ""),
@@ -137,7 +106,7 @@ async def github_login(request: Request, settings: Settings = Depends(get_settin
 @router.get("/github/callback")
 async def github_callback(
     request: Request,
-    session: Session = Depends(get_session),
+    db: D1Client = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     _register_oauth(settings)
@@ -161,7 +130,6 @@ async def github_callback(
             )
             resp.raise_for_status()
             emails = resp.json()
-            # Only trust verified emails
             verified = [e for e in emails if e.get("verified")]
             if not verified:
                 raise HTTPException(status_code=400, detail="No verified email found on GitHub account")
@@ -171,8 +139,8 @@ async def github_callback(
     if not gh_user.get("id"):
         raise HTTPException(status_code=400, detail="Missing user ID from GitHub")
 
-    user = _upsert_user(
-        session,
+    user = await d1_database.upsert_user(
+        db,
         email=email,
         name=gh_user.get("name") or gh_user.get("login", ""),
         avatar_url=gh_user.get("avatar_url", ""),
@@ -190,23 +158,19 @@ async def github_callback(
 
 @router.get("/me")
 async def me(
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+    db: D1Client = Depends(get_db),
 ):
-    public_count = session.exec(
-        select(func.count()).where(Episode.creator_id == current_user.id, Episode.is_public == True)  # noqa: E712
-    ).one()
-    total_count = session.exec(
-        select(func.count()).where(Episode.creator_id == current_user.id)
-    ).one()
+    public_count = await d1_database.count_user_episodes(db, current_user["id"], public_only=True)
+    total_count = await d1_database.count_user_episodes(db, current_user["id"])
 
     return {
-        "id": current_user.id,
-        "name": current_user.name,
-        "email": current_user.email,
-        "avatar_url": current_user.avatar_url,
-        "interests": current_user.interests,
-        "created_at": current_user.created_at.isoformat(),
+        "id": current_user["id"],
+        "name": current_user["name"],
+        "email": current_user["email"],
+        "avatar_url": current_user["avatar_url"],
+        "interests": current_user["interests"],
+        "created_at": current_user["created_at"],
         "stats": {
             "total_episodes": total_count,
             "public_episodes": public_count,
@@ -218,7 +182,7 @@ async def me(
 @router.post("/dev-login")
 async def dev_login(
     response: Response,
-    session: Session = Depends(get_session),
+    db: D1Client = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     """Log in as the seed user without OAuth. Only works when session_secret is
@@ -226,12 +190,12 @@ async def dev_login(
     if settings.session_secret != "change-me":
         raise HTTPException(status_code=404, detail="Not found")
 
-    user = session.exec(select(User).where(User.email == "seed@your-podcast.local")).first()
+    user = await d1_database.get_user_by_email(db, "seed@your-podcast.local")
     if not user:
         raise HTTPException(status_code=400, detail="Seed user not found. Run: python seed.py")
 
     _set_session_cookie(response, user, settings)
-    return {"ok": True, "user": user.name, "email": user.email}
+    return {"ok": True, "user": user["name"], "email": user["email"]}
 
 
 @router.post("/logout")

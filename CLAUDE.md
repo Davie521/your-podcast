@@ -25,7 +25,9 @@ docs/              # 架构决策文档
 
 - 入口: `app/main.py` (FastAPI)
 - 配置: `app/config.py` (环境变量)
-- 模型: `app/models.py` (SQLModel，目标迁移到 Cloudflare D1)
+- 模型: `app/models.py` (仅含 TaskStatus 枚举)
+- 数据库: `app/d1_database.py` (D1 查询层，返回 dict)
+- D1 客户端: `app/services/d1.py` (Cloudflare D1 REST API 封装)
 - 路由: `app/routers/` — `auth.py`, `episodes.py`, `generate.py`, `tasks.py`, `onboarding.py`
 - 服务层: `app/services/`
   - `rss.py` — feedparser 抓取
@@ -36,7 +38,7 @@ docs/              # 架构决策文档
   - `storage.py` — R2 上传（boto3 S3 兼容）
   - `cover.py` — 播客封面生成（渐变色占位图）
   - `pipeline.py` — 全流程编排（RSS → 筛选 → 脚本 → TTS → 合并 → 上传 → 入库）
-- CLI: `generate.py` — 手动生成播客；`seed.py` — 填充测试数据
+- CLI: `generate.py` — 手动生成播客；`seed.py` — 填充测试数据；`init_d1.py` — 初始化 D1 表结构
 - 完整 API: `/api/health`, `/api/auth/*`, `/api/episodes`, `/api/episodes/me`, `/api/episodes/{id}`, `/api/generate`, `/api/tasks/{id}`, `/api/onboarding/interests`
 
 ## 前端 (frontend/)
@@ -61,6 +63,9 @@ uvicorn app.main:app --reload
 
 # 前端
 cd frontend && npm install && npm run dev
+
+# 初始化 D1 表结构（首次部署）
+cd backend && python init_d1.py
 
 # 生成播客
 cd backend && python generate.py
@@ -111,5 +116,5 @@ cd frontend && vercel         # 前端
 - 播客生成是长任务（几分钟），后端接口需要异步处理或后台任务
 - TTS 需要逐句调用再用 ffmpeg 拼接，注意错误重试（Inworld 最多 5 次重试）
 - R2 上传使用 boto3 (S3 兼容)，endpoint 指向 Cloudflare
-- **数据库迁移待完成**：当前代码使用 SQLite，目标迁移到 Cloudflare D1（通过 REST API 访问，需配置 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `D1_DATABASE_ID`）
+- **数据库**：已迁移到 Cloudflare D1（通过 REST API 访问），需配置 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `D1_DATABASE_ID`。初始化表结构：`python init_d1.py`
 - 前端环境变量：`NEXT_PUBLIC_API_URL` 指向 Railway 后端地址（本地开发默认 `http://localhost:8000`）

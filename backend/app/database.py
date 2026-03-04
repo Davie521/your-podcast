@@ -1,25 +1,6 @@
-from collections.abc import Generator
-from pathlib import Path
-
-from sqlmodel import Session, SQLModel, create_engine
-
-from app.config import get_settings
-
-settings = get_settings()
-
-# Ensure the SQLite parent directory exists
-if settings.database_url.startswith("sqlite"):
-    db_path = settings.database_url.replace("sqlite:///", "")
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args)
+from app.services.d1 import D1Client, get_d1_client
 
 
-def create_db_and_tables() -> None:
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session() -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        yield session
+def get_db() -> D1Client:
+    """FastAPI dependency — returns a D1Client instance."""
+    return get_d1_client()

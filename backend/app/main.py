@@ -1,6 +1,5 @@
 import logging
 import os
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,22 +7,13 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
-from app.database import create_db_and_tables
-from app.models import Episode, Source, Task, TranscriptLine, User  # noqa: F401 — register tables
 from app.routers import auth, episodes, generate, onboarding, tasks
 
 logger = logging.getLogger(__name__)
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    create_db_and_tables()
-    yield
-
-
 settings = get_settings()
 
-app = FastAPI(title="Your Podcast API", lifespan=lifespan)
+app = FastAPI(title="Your Podcast API")
 
 # SessionMiddleware is required by authlib for OAuth state storage
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
