@@ -5,31 +5,20 @@ interface PodcastCardProps {
   title: string;
   author: string;
   description: string;
-  color: string;
-  imageUrl?: string;
-  onPlay?: () => void;
+  coverUrl: string | null;
+  onPlay: () => void;
 }
 
-export function PodcastCard({
-  title,
-  author,
-  description,
-  color,
-  imageUrl,
-  onPlay,
-}: PodcastCardProps) {
+export function PodcastCard({ title, author, description, coverUrl, onPlay }: PodcastCardProps) {
   return (
     <div className="flex gap-4 items-start border-b border-border-warm pb-4">
-      <div
-        className="relative size-20 shrink-0 rounded-[10px] overflow-hidden"
-        style={{ backgroundColor: color }}
-      >
-        {imageUrl && (
+      <div className="relative size-20 shrink-0 rounded-[10px] overflow-hidden bg-[#e8e4dd]">
+        {coverUrl != null && (
           <Image
-            src={imageUrl}
+            src={coverUrl}
             alt={`${title} cover art`}
             fill
-            className="object-cover opacity-80"
+            className="object-cover"
           />
         )}
       </div>
