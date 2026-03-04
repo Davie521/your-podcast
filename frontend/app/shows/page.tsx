@@ -32,21 +32,24 @@ interface Subscription {
 }
 
 const RECOMMENDATIONS: Recommendation[] = [
-  { id: 'rec-1', title: 'The Modern Nomad', episode: 'Episode 12: Finding Home', color: '#009689', progress: 100, audio_url: '/audio/sample1.mp3' },
-  { id: 'rec-2', title: 'Sonic Diaries', episode: 'Episode 5: Sound Waves', color: '#432dd7', progress: 30, audio_url: '/audio/sample2.mp3' },
-  { id: 'rec-3', title: 'Culture Club', episode: 'Episode 22: Urban Art', color: '#f54900', progress: 85, audio_url: '/audio/sample3.mp3' },
+  { id: 'rec-1', title: 'GPT-5 and the Future of Reasoning', episode: 'by @marcus.li · 8 min', color: '#009689', progress: 100, audio_url: '/audio/sample1.mp3' },
+  { id: 'rec-2', title: 'Why Every Startup Needs an AI Strategy', episode: 'by @jenny.w · 12 min', color: '#432dd7', progress: 30, audio_url: '/audio/sample2.mp3' },
+  { id: 'rec-3', title: 'Quantum Computing Explained Simply', episode: 'by @physics.dan · 9 min', color: '#f54900', progress: 85, audio_url: '/audio/sample3.mp3' },
 ];
 
 const RECENT_EPISODES: RecentEpisode[] = [
-  { id: 'recent-1', title: 'The Art of Listening', show: 'Sonic Diaries', duration: '42 min', ago: '2 days ago' },
-  { id: 'recent-2', title: 'Modern Architecture', show: 'The Modern Nomad', duration: '38 min', ago: '5 days ago' },
-  { id: 'recent-3', title: 'Jazz Evolution', show: 'Culture Club', duration: '51 min', ago: '1 week ago' },
+  { id: 'recent-1', title: 'How Claude 4 Changes Coding', show: '@dev.alex', duration: '11 min', ago: '2h ago' },
+  { id: 'recent-2', title: 'The Death of Traditional Podcasts', show: '@techbrief', duration: '7 min', ago: '5h ago' },
+  { id: 'recent-3', title: 'React Server Components Deep Dive', show: '@frontend.fm', duration: '14 min', ago: '1 day ago' },
 ];
 
 const SUBSCRIPTIONS: Subscription[] = [
-  { id: 'sub-1', title: 'The Modern Nomad', color: '#009689' },
-  { id: 'sub-2', title: 'Sonic Diaries', color: '#432dd7' },
-  { id: 'sub-3', title: 'Culture Club', color: '#f54900' },
+  { id: 'sub-1', title: 'Tech', color: '#009689' },
+  { id: 'sub-2', title: 'Startups', color: '#432dd7' },
+  { id: 'sub-3', title: 'Science', color: '#f54900' },
+  { id: 'sub-4', title: 'Programming', color: '#155dfc' },
+  { id: 'sub-5', title: 'Business', color: '#ff637e' },
+  { id: 'sub-6', title: 'Web Dev', color: '#f59e0b' },
 ];
 
 export default function ShowsPage() {
@@ -59,14 +62,14 @@ export default function ShowsPage() {
         <div className="flex flex-col gap-3 mb-10">
           <h1 className="font-serif text-[36px] leading-10 text-[#111]">My Shows</h1>
           <p className="font-serif italic text-[14px] text-[#666] leading-5 opacity-70">
-            Your curated collection of voices
+            Your saved AI-generated podcasts
           </p>
         </div>
 
-        {/* Today's Recommendations */}
+        {/* Picked For You */}
         <section className="mb-10">
           <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
-            Today&apos;s Recommendations
+            Picked For You
           </h2>
           <div className="flex flex-col gap-4">
             {RECOMMENDATIONS.map(({ id, title, episode, color, imageUrl, progress, audio_url }) => {
@@ -146,13 +149,13 @@ export default function ShowsPage() {
           </div>
         </section>
 
-        {/* All Subscriptions */}
+        {/* Topics You Follow */}
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase">
-              All Subscriptions
+              Topics You Follow
             </h2>
-            <span className="font-inter text-[12px] text-[#666]">{SUBSCRIPTIONS.length} shows</span>
+            <span className="font-inter text-[12px] text-[#666]">{SUBSCRIPTIONS.length} topics</span>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {SUBSCRIPTIONS.map(({ id, title, color, imageUrl }) => (

@@ -2,95 +2,96 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { BottomNav } from '@/components/BottomNav';
 
-interface FavoriteEpisode {
+interface SavedEpisode {
   id: string;
-  show: string;
-  episode: string;
-  podcastName: string;
+  title: string;
+  subtitle: string;
+  creator: string;
   duration: string;
   imageUrl?: string;
-  imageColor: string;
+  color: string;
 }
 
-const FAVORITES: FavoriteEpisode[] = [
+const FAVORITES: SavedEpisode[] = [
   {
     id: '1',
-    show: 'Design Matters with Debbie Millman',
-    episode: 'Marina Willer: The Art of Identity',
-    podcastName: 'Design Matters',
-    duration: '45 min',
-    imageColor: '#009689',
+    title: 'GPT-5 and the Future of Reasoning',
+    subtitle: 'What chain-of-thought means for devs',
+    creator: '@marcus.li',
+    duration: '8 min',
+    color: '#009689',
   },
   {
     id: '2',
-    show: 'The Daily',
-    episode: 'Understanding the Shift',
-    podcastName: 'The Daily',
-    duration: '28 min',
-    imageColor: '#432dd7',
+    title: 'Why Every Startup Needs an AI Strategy',
+    subtitle: 'From YC to indie hackers',
+    creator: '@jenny.w',
+    duration: '12 min',
+    color: '#432dd7',
   },
   {
     id: '3',
-    show: 'The Ezra Klein Show',
-    episode: 'How AI Changes Work',
-    podcastName: 'Ezra Klein',
-    duration: '62 min',
-    imageColor: '#ff637e',
+    title: 'Rust vs Go in 2026',
+    subtitle: 'Backend, WASM, and systems',
+    creator: '@dev.alex',
+    duration: '6 min',
+    color: '#ff637e',
   },
   {
     id: '4',
-    show: 'HBR IdeaCast',
-    episode: 'Leading Through Change',
-    podcastName: 'HBR IdeaCast',
-    duration: '35 min',
-    imageColor: '#155dfc',
+    title: 'Inside Apple\'s Vision Pro 2 Launch',
+    subtitle: 'Spatial computing for AR/VR devs',
+    creator: '@techbrief',
+    duration: '7 min',
+    color: '#155dfc',
   },
 ];
 
-const LISTEN_LATER: FavoriteEpisode[] = [
+const LISTEN_LATER: SavedEpisode[] = [
   {
     id: '5',
-    show: 'Design Matters with Debbie Millman',
-    episode: 'Marina Willer: The Art of Identity',
-    podcastName: 'Design Matters',
-    duration: '45 min',
-    imageColor: '#009689',
+    title: 'How Claude 4 Changes Coding',
+    subtitle: 'AI pair programming, evolved',
+    creator: '@dev.alex',
+    duration: '11 min',
+    color: '#f54900',
   },
   {
     id: '6',
-    show: 'The Daily',
-    episode: 'Understanding the Shift',
-    podcastName: 'The Daily',
-    duration: '28 min',
-    imageColor: '#432dd7',
+    title: 'The Death of Traditional Podcasts',
+    subtitle: 'Why short-form AI audio wins',
+    creator: '@techbrief',
+    duration: '7 min',
+    color: '#432dd7',
   },
   {
     id: '7',
-    show: 'The Ezra Klein Show',
-    episode: 'How AI Changes Work',
-    podcastName: 'Ezra Klein',
-    duration: '62 min',
-    imageColor: '#ff637e',
+    title: 'Quantum Computing Explained Simply',
+    subtitle: 'Qubits, entanglement, and you',
+    creator: '@physics.dan',
+    duration: '9 min',
+    color: '#009689',
   },
 ];
 
-function EpisodeCard({ show, episode, podcastName, duration, imageUrl, imageColor }: Omit<FavoriteEpisode, 'id'>) {
+function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color }: Omit<SavedEpisode, 'id'>) {
   return (
-    <div className="flex gap-3 items-start border border-[#e0e0d8] rounded-[10px] p-[13px]">
+    <div className="flex gap-4 items-start border-b border-border-warm pb-4">
       <div
-        className="relative size-12 shrink-0 rounded-[4px] overflow-hidden"
-        style={{ backgroundColor: imageColor }}
+        className="relative size-20 shrink-0 rounded-[10px] overflow-hidden"
+        style={{ backgroundColor: color }}
       >
         {imageUrl && (
-          <Image src={imageUrl} alt={show} fill className="object-cover" />
+          <Image src={imageUrl} alt={title} fill className="object-cover opacity-80" />
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="font-serif font-bold text-[12px] leading-[15px] text-[#111] truncate">{show}</h4>
-        <p className="font-serif text-[10px] leading-[13px] text-[rgba(17,17,17,0.8)] mt-1 truncate">{episode}</p>
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-inter text-[9px] text-[#666]">{podcastName}</span>
-          <span className="font-inter text-[9px] text-[#666]">{duration}</span>
+      <div className="flex-1 min-w-0 pt-0.5">
+        <h3 className="font-serif font-bold text-[16px] leading-5 text-[#111] line-clamp-2">{title}</h3>
+        <p className="font-serif text-[12px] leading-4 text-[rgba(17,17,17,0.7)] mt-1 line-clamp-1">{subtitle}</p>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="font-inter text-[12px] text-[#666]">{creator}</span>
+          <span className="text-[#666]">·</span>
+          <span className="font-inter text-[12px] text-[#666]">{duration}</span>
         </div>
       </div>
     </div>
@@ -100,10 +101,13 @@ function EpisodeCard({ show, episode, podcastName, duration, imageUrl, imageColo
 export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-cream">
-      <main className="mx-auto w-full max-w-[428px] pb-24">
-        {/* Settings button */}
-        <div className="flex justify-end px-6 pt-4">
-          <Link href="/settings" aria-label="Settings" className="p-2 text-[#111]">
+      <main className="mx-auto w-full max-w-[428px] px-6 pt-6 pb-24">
+        {/* Header — same pattern as Explore/Shows */}
+        <div className="flex items-start justify-between mb-8">
+          <h1 className="font-serif text-[36px] leading-10 text-[#111]">
+            Profile
+          </h1>
+          <Link href="/settings" aria-label="Settings" className="p-1 mt-2 text-[#111]">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
               <path
                 d="M11 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
@@ -124,39 +128,37 @@ export default function ProfilePage() {
         </div>
 
         {/* Avatar + name */}
-        <div className="flex flex-col items-center gap-4 px-6 mt-2 mb-8">
-          <div className="size-24 rounded-full border-2 border-[rgba(17,17,17,0.1)] shadow-sm overflow-hidden bg-[#e0e0d8]" />
-          <div className="flex flex-col items-center gap-0">
-            <h2 className="font-serif font-bold text-[24px] leading-8 text-[#111]">Eleanor Davies</h2>
-            <p className="font-serif text-[16px] leading-6 text-[#666]">@eleanor.d</p>
+        <div className="flex items-center gap-4 mb-10">
+          <div className="size-16 shrink-0 rounded-full border-2 border-[rgba(17,17,17,0.1)] shadow-sm overflow-hidden bg-[#e0e0d8]" />
+          <div>
+            <h2 className="font-serif font-bold text-[20px] leading-6 text-[#111]">Alex Chen</h2>
+            <p className="font-serif text-[14px] leading-5 text-[#666]">@alex.chen</p>
           </div>
         </div>
 
-        <div className="px-6 flex flex-col gap-8">
-          {/* Favorites */}
-          <section>
-            <h3 className="font-serif font-bold text-[10px] text-[rgba(17,17,17,0.8)] tracking-[2px] uppercase mb-4">
-              Favorites
-            </h3>
-            <div className="flex flex-col gap-4">
-              {FAVORITES.map((ep) => (
-                <EpisodeCard key={ep.id} {...ep} />
-              ))}
-            </div>
-          </section>
+        {/* Favorites */}
+        <section className="mb-10">
+          <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
+            Favorites
+          </h2>
+          <div className="flex flex-col gap-4">
+            {FAVORITES.map((ep) => (
+              <EpisodeRow key={ep.id} {...ep} />
+            ))}
+          </div>
+        </section>
 
-          {/* Listen Later */}
-          <section>
-            <h3 className="font-serif font-bold text-[10px] text-[rgba(17,17,17,0.8)] tracking-[2px] uppercase mb-4">
-              Listen Later
-            </h3>
-            <div className="flex flex-col gap-4">
-              {LISTEN_LATER.map((ep) => (
-                <EpisodeCard key={ep.id} {...ep} />
-              ))}
-            </div>
-          </section>
-        </div>
+        {/* Listen Later */}
+        <section>
+          <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
+            Listen Later
+          </h2>
+          <div className="flex flex-col gap-4">
+            {LISTEN_LATER.map((ep) => (
+              <EpisodeRow key={ep.id} {...ep} />
+            ))}
+          </div>
+        </section>
       </main>
 
       <BottomNav />
