@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError, request } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +10,9 @@ import { StepDots } from '@/components/StepDots';
 import { InterestBubble } from '@/components/InterestBubble';
 import type { CategoriesResponse, InterestsResponse } from '@/types/onboarding';
 
-const BUBBLE_LAYOUT: Record<string, { size: number; left: number; top: number }> = {
+type BubbleLayout = { size: number; left: number; top: number };
+
+const BUBBLE_LAYOUT: Record<string, BubbleLayout> = {
   'Arts & Culture': { size: 150, left: 40, top: 0 },
   Lifestyle: { size: 130, left: 214, top: 10 },
   'Thought & Ideas': { size: 120, left: 55, top: 179 },
@@ -18,7 +20,42 @@ const BUBBLE_LAYOUT: Record<string, { size: number; left: number; top: number }>
   Business: { size: 120, left: 132, top: 328 },
 };
 
-const DEFAULT_LAYOUT = { size: 110, left: 140, top: 250 };
+const BUBBLE_CANVAS_WIDTH = 384;
+const BUBBLE_CANVAS_HEIGHT = 448;
+const BUBBLE_PADDING = 16;
+const MIN_BUBBLE_SIZE = 92;
+const MAX_BUBBLE_SIZE = 118;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getFallbackLayout(index: number, total: number): BubbleLayout {
+  const safeTotal = Math.max(1, total);
+  const cols = safeTotal <= 4 ? 2 : safeTotal <= 9 ? 3 : 4;
+  const rows = Math.ceil(safeTotal / cols);
+
+  const sizeFromGrid = Math.min(
+    MAX_BUBBLE_SIZE,
+    (BUBBLE_CANVAS_WIDTH - BUBBLE_PADDING * 2) / cols - 8,
+    (BUBBLE_CANVAS_HEIGHT - BUBBLE_PADDING * 2) / rows - 8,
+  );
+  const size = Math.max(MIN_BUBBLE_SIZE, Math.floor(sizeFromGrid));
+
+  const cellWidth = (BUBBLE_CANVAS_WIDTH - BUBBLE_PADDING * 2) / cols;
+  const cellHeight = (BUBBLE_CANVAS_HEIGHT - BUBBLE_PADDING * 2) / rows;
+  const row = Math.floor(index / cols);
+  const col = index % cols;
+
+  const left = BUBBLE_PADDING + col * cellWidth + (cellWidth - size) / 2;
+  const top = BUBBLE_PADDING + row * cellHeight + (cellHeight - size) / 2;
+
+  return {
+    size,
+    left: clamp(left, 0, BUBBLE_CANVAS_WIDTH - size),
+    top: clamp(top, 0, BUBBLE_CANVAS_HEIGHT - size),
+  };
+}
 
 export default function InterestsPage() {
   const router = useRouter();
@@ -28,6 +65,12 @@ export default function InterestsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fallbackIndexByCategory = useMemo(() => {
+    const unknown = categories.filter(
+      (cat) => !Object.prototype.hasOwnProperty.call(BUBBLE_LAYOUT, cat),
+    );
+    return new Map(unknown.map((cat, index) => [cat, index]));
+  }, [categories]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -126,9 +169,14 @@ export default function InterestsPage() {
       </div>
 
       {/* Bubbles */}
-      <div className="relative w-[384px] h-[448px] mx-auto mt-6">
+      <div className="relative w-full max-w-[384px] h-[448px] mx-auto mt-6">
         {categories.map((cat) => {
-          const layout = BUBBLE_LAYOUT[cat] ?? DEFAULT_LAYOUT;
+          const layout =
+            BUBBLE_LAYOUT[cat] ??
+            getFallbackLayout(
+              fallbackIndexByCategory.get(cat) ?? 0,
+              fallbackIndexByCategory.size,
+            );
           return (
             <div
               key={cat}

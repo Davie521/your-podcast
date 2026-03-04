@@ -2,7 +2,7 @@
 
 import { createContext, useReducer, useEffect, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthState, AuthAction, AuthDispatch, User } from '@/types/auth';
+import type { AuthState, AuthAction, AuthDispatch } from '@/types/auth';
 import {
   ApiError,
   fetchCurrentUser,

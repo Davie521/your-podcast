@@ -4,6 +4,8 @@ import { useRef, useState, useCallback } from 'react';
 import { useAudioState } from '@/hooks/useAudioState';
 import { useAudioDispatch } from '@/hooks/useAudioDispatch';
 
+const SEEK_STEP_SECONDS = 5;
+
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
@@ -29,25 +31,65 @@ export function ProgressBar() {
     return ratio * duration;
   }, [duration]);
 
-  function handlePointerDown(e: React.PointerEvent) {
+  const clearDraggingState = useCallback(() => {
+    isDragging.current = false;
+    setIsDraggingState(false);
+    setDragTime(null);
+  }, []);
+
+  const commitPointerSeek = useCallback((clientX: number) => {
+    seek(getTimeFromEvent(clientX));
+  }, [getTimeFromEvent, seek]);
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (duration <= 0) return;
     isDragging.current = true;
     setIsDraggingState(true);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture(e.pointerId);
     setDragTime(getTimeFromEvent(e.clientX));
   }
 
-  function handlePointerMove(e: React.PointerEvent) {
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!isDragging.current) return;
     setDragTime(getTimeFromEvent(e.clientX));
   }
 
-  function handlePointerUp() {
-    if (isDragging.current && dragTime !== null) {
-      seek(dragTime);
+  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!isDragging.current) return;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    isDragging.current = false;
-    setIsDraggingState(false);
-    setDragTime(null);
+    commitPointerSeek(e.clientX);
+    clearDraggingState();
+  }
+
+  function handlePointerCancel() {
+    clearDraggingState();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (duration <= 0) return;
+
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        seek(Math.max(0, currentTime - SEEK_STEP_SECONDS));
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        seek(Math.min(duration, currentTime + SEEK_STEP_SECONDS));
+        break;
+      case 'Home':
+        e.preventDefault();
+        seek(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        seek(duration);
+        break;
+      default:
+        break;
+    }
   }
 
   return (
@@ -59,11 +101,15 @@ export function ProgressBar() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handlePointerCancel}
+        onKeyDown={handleKeyDown}
         role="slider"
         aria-label="Playback progress"
         aria-valuemin={0}
         aria-valuemax={duration}
-        aria-valuenow={displayTime}
+        aria-valuenow={Math.round(displayTime)}
+        aria-valuetext={formatTime(displayTime)}
         tabIndex={0}
       >
         {/* Background track */}
