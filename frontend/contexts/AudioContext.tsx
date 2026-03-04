@@ -142,7 +142,11 @@ export function AudioProvider({ children }: AudioProviderProps) {
       audio.currentTime = time;
     }
     dispatch({ type: 'SET_TIME', currentTime: time });
-  }, []);
+    // In simulated mode, restart timer from new position to prevent drift
+    if (!(audio?.src) && stateRef.current.isPlaying) {
+      startSimulatedTimer();
+    }
+  }, [startSimulatedTimer]);
 
   const skipForward = useCallback((seconds: number = SKIP_SECONDS) => {
     const { currentTime, duration } = stateRef.current;

@@ -29,7 +29,7 @@ export function MiniPlayer() {
   return (
     <Link
       href={`/episode/${currentEpisode.id}`}
-      className="fixed bottom-17 left-0 right-0 z-20 border-t border-border-warm bg-cream/95 backdrop-blur-sm animate-slide-up"
+      className="fixed bottom-17 left-0 right-0 z-20 border-t border-border-warm bg-cream/95 backdrop-blur-sm animate-slide-up vt-fixed"
     >
       {/* Progress bar */}
       <div className="h-[2px] bg-border-warm">

@@ -29,7 +29,7 @@ export default function ExplorePage() {
     <div className="min-h-screen bg-cream">
       <main className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}>
         <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 animate-fade-in">
             <h1 className="font-serif text-4xl leading-10 text-[#111]">
               Discover
             </h1>
@@ -38,11 +38,11 @@ export default function ExplorePage() {
 
           <div className="flex flex-col gap-4">
             {filtered.length === 0 ? (
-              <p className="font-inter text-sm text-[#666] text-center py-8">
+              <p className="font-inter text-sm text-[#666] text-center py-8 animate-fade-in">
                 No podcasts found.
               </p>
             ) : (
-              filtered.map((ep) => (
+              filtered.map((ep, index) => (
                 <EpisodeRow
                   key={ep.id}
                   title={ep.title}
@@ -57,6 +57,8 @@ export default function ExplorePage() {
                     play(ep);
                     router.push(`/episode/${ep.id}`);
                   }}
+                  className="animate-list-item"
+                  style={{ animationDelay: `${100 + index * 60}ms` }}
                 />
               ))
             )}

@@ -12,14 +12,17 @@ interface EpisodeRowProps {
   readonly isPlaying?: boolean;
   readonly onPlay?: () => void;
   readonly onTap?: () => void;
+  readonly className?: string;
+  readonly style?: React.CSSProperties;
 }
 
-export function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color, isPlaying = false, onPlay, onTap }: EpisodeRowProps) {
+export function EpisodeRow({ title, subtitle, creator, duration, imageUrl, color, isPlaying = false, onPlay, onTap, className, style }: EpisodeRowProps) {
   const Icon = isPlaying ? PauseIcon : PlayIcon;
 
   return (
     <div
-      className="flex gap-4 items-start border-b border-border-warm pb-4 cursor-pointer tap-feedback"
+      className={`flex gap-4 items-start border-b border-border-warm pb-4 cursor-pointer tap-feedback ${className ?? ''}`}
+      style={style}
       onClick={onTap}
       role={onTap ? 'button' : undefined}
       tabIndex={onTap ? 0 : undefined}

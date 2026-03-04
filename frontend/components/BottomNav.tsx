@@ -19,7 +19,7 @@ export function BottomNav() {
   return (
     <>
       <MiniPlayer />
-      <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 h-17 border-t border-border-warm bg-cream/80 backdrop-blur-sm flex items-center justify-evenly z-10">
+      <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 h-17 border-t border-border-warm bg-cream/80 backdrop-blur-sm flex items-center justify-evenly z-10 vt-fixed">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
