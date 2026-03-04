@@ -65,6 +65,7 @@ cd frontend && vercel         # 前端
 - 前端 TypeScript: **必须遵守 [docs/frontend-coding-rules.md](docs/frontend-coding-rules.md)** — Next.js App Router, 静态导出, Tailwind CSS, 严格 TypeScript
 - 环境变量通过 .env 管理，敏感 key 不要提交到代码仓库
 - MP3 文件不提交到 Git，统一存 R2
+- 测试截图统一放到 `screenshots/` 目录（已 gitignore）
 
 ## Git 工作流
 
