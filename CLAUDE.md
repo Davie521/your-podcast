@@ -46,13 +46,21 @@ docs/              # 架构决策文档
 - 页面:
   - `app/page.tsx` — 重定向到 /explore
   - `app/explore/page.tsx` — 播客发现页（当前使用硬编码示例数据，待接入 API）
+  - `app/login/page.tsx` — 登录页（Google/GitHub OAuth）
+  - `app/profile/page.tsx` — 个人资料页（需登录，显示用户信息）
 - 组件:
-  - `components/PodcastCard.tsx` — 播客卡片（含播放按钮）
-  - `components/SearchInput.tsx` — 搜索框
   - `components/BottomNav.tsx` — 底部导航（/explore, /shows, /profile）
-  - `components/Player.tsx` — 音频播放器（待实现）
-- 类型: `types/podcast.ts`
-- API 客户端: `lib/api.ts`（待实现，调用后端 `/api/episodes`）
+  - `components/ClientLayout.tsx` — 客户端布局（AuthProvider + AudioProvider + ViewTransition）
+  - `components/EpisodeRow.tsx` — 播客集行
+  - `components/MiniPlayer.tsx` — 迷你播放器
+- 上下文:
+  - `contexts/AudioContext.tsx` — 全局音频状态
+  - `contexts/AuthContext.tsx` — 认证状态（auto dev-login in dev mode）
+- Hooks:
+  - `hooks/useAuth.ts` / `hooks/useAuthDispatch.ts` — 认证状态和操作
+  - `hooks/useAudioState.ts` / `hooks/useAudioDispatch.ts` — 音频状态和操作
+- 类型: `types/audio.ts`, `types/auth.ts`
+- API 客户端: `lib/api.ts`（fetch wrapper with credentials: 'include'）
 
 ## 开发命令
 

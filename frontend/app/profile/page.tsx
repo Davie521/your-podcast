@@ -1,8 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/BottomNav';
 import { ChevronRightIcon } from '@/components/icons/ChevronRightIcon';
 import { useAudioState } from '@/hooks/useAudioState';
+import { useAuth } from '@/hooks/useAuth';
+import { useAuthDispatch } from '@/hooks/useAuthDispatch';
 
 function SettingRow({
   label,
@@ -28,15 +32,43 @@ function SettingRow({
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { currentEpisode } = useAudioState();
+  const { status, user } = useAuth();
+  const { logout } = useAuthDispatch();
   const hasPlayer = currentEpisode !== null;
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    }
+  }, [status, router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#111] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated' || !user) {
+    return null;
+  }
+
+  const initial = user.name.charAt(0).toUpperCase();
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/login');
+  }
 
   return (
     <div className="min-h-screen bg-cream">
       <main
         className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}
       >
-        {/* Header — same pattern as Shows */}
+        {/* Header */}
         <div className="flex flex-col gap-3 mb-10 animate-fade-in">
           <h1 className="font-serif text-4xl leading-10 text-[#111]">Profile</h1>
           <p className="font-serif italic text-[14px] text-[#666] leading-5 opacity-70">
@@ -44,28 +76,34 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        {/* TODO: Replace hardcoded user data with auth context once login is implemented */}
-        {/* Profile row — left-aligned like an episode row */}
+        {/* Profile row */}
         <button
           type="button"
           aria-label="View profile"
           className="flex w-full items-center gap-4 pb-4 border-b border-border-warm tap-feedback animate-fade-in anim-delay-1"
         >
-          <div
-            className="size-16 shrink-0 rounded-full bg-border-warm flex items-center justify-center"
-          >
-            <span className="font-serif text-[24px] text-[#111]/30 select-none leading-none">
-              M
-            </span>
-          </div>
+          {user.avatar_url ? (
+            /* Native img: next/image incompatible with static export for external OAuth avatar URLs */
+            <img
+              src={user.avatar_url}
+              alt={user.name}
+              className="size-16 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="size-16 shrink-0 rounded-full bg-border-warm flex items-center justify-center">
+              <span className="font-serif text-[24px] text-[#111]/30 select-none leading-none">
+                {initial}
+              </span>
+            </div>
+          )}
           <div className="flex-1 min-w-0 text-left">
-            <p className="font-serif font-bold text-[16px] leading-5 text-[#111]">Mark</p>
-            <p className="font-inter text-[12px] text-[#666] mt-1">@mark</p>
+            <p className="font-serif font-bold text-[16px] leading-5 text-[#111]">{user.name}</p>
+            <p className="font-inter text-[12px] text-[#666] mt-1">{user.email}</p>
           </div>
           <ChevronRightIcon className="size-[18px] text-[#c0c0b5]" />
         </button>
 
-        {/* General section — same pattern as Shows "Recent" */}
+        {/* General section */}
         <section className="mt-8 animate-fade-in anim-delay-2">
           <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
             General
@@ -78,6 +116,7 @@ export default function ProfilePage() {
         <div className="mt-12 flex justify-center animate-fade-in anim-delay-3">
           <button
             type="button"
+            onClick={handleLogout}
             className="font-serif text-[14px] text-[#c07060] tap-feedback"
           >
             Log Out
