@@ -115,7 +115,13 @@ async def _run_pipeline_inner(
     logger.info("Merged → %s (%ds)", mp3_path, duration)
 
     # Step 6: Cover image
-    title = f"Your Podcast — {episode_date}"
+    try:
+        dt = datetime.strptime(episode_date, "%Y-%m-%d")
+        display_date = f"{dt.strftime('%b')} {dt.day}"
+    except ValueError:
+        logger.warning("Invalid episode_date '%s', falling back to raw value", episode_date)
+        display_date = episode_date
+    title = f"Your Podcast — {display_date}"
     cover_url = cover.generate_cover_url(title)
 
     # Step 7: Upload to R2

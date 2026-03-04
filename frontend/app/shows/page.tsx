@@ -7,8 +7,9 @@ import { BottomNav } from '@/components/BottomNav';
 import { EpisodeRow } from '@/components/EpisodeRow';
 import { useAudioState } from '@/hooks/useAudioState';
 import { useAudioDispatch } from '@/hooks/useAudioDispatch';
-import { fetchMyEpisodes } from '@/lib/api';
-import { formatDuration } from '@/lib/format';
+import { useAuth } from '@/hooks/useAuth';
+import { ApiError, fetchMyEpisodes } from '@/lib/api';
+import { formatDate, formatDuration } from '@/lib/format';
 
 type LoadState = 'loading' | 'loaded' | 'error';
 
@@ -17,11 +18,19 @@ export default function ShowsPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const { currentEpisode, isPlaying } = useAudioState();
   const { toggle, play } = useAudioDispatch();
+  const { status } = useAuth();
   const router = useRouter();
 
   const hasPlayer = currentEpisode !== null;
 
   useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
     let cancelled = false;
     fetchMyEpisodes()
       .then((result) => {
@@ -29,21 +38,25 @@ export default function ShowsPage() {
         setEpisodes(result.episodes);
         setLoadState('loaded');
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
+        if (err instanceof ApiError && err.status === 401) {
+          router.replace('/login');
+          return;
+        }
         setLoadState('error');
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [status, router]);
 
   return (
     <div className="min-h-screen bg-cream">
       <main className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}>
         {/* Header */}
         <div className="flex flex-col gap-3 mb-10 animate-fade-in">
-          <h1 className="font-serif text-4xl leading-10 text-[#111]">My Shows</h1>
+          <h1 className="font-serif text-4xl leading-10 text-[#111]">Daily Podcast</h1>
           <p className="font-serif italic text-[14px] text-[#666] leading-5 opacity-70">
-            Your saved AI-generated podcasts
+            AI-generated podcasts based on your interests
           </p>
         </div>
 
@@ -65,7 +78,7 @@ export default function ShowsPage() {
 
         {loadState === 'error' && (
           <p className="font-inter text-sm text-[#666] text-center py-16 animate-fade-in">
-            Sign in to see your podcasts.
+            Failed to load podcasts.
           </p>
         )}
 
@@ -77,16 +90,13 @@ export default function ShowsPage() {
 
         {loadState === 'loaded' && episodes.length > 0 && (
           <section>
-            <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4 animate-fade-in anim-delay-1">
-              Recent
-            </h2>
             <div className="flex flex-col gap-4">
               {episodes.map((ep, index) => (
                 <EpisodeRow
                   key={ep.id}
                   title={ep.title}
                   description={ep.description}
-                  creatorName={ep.creatorName}
+                  creatorName={formatDate(ep.publishedAt)}
                   duration={formatDuration(ep.duration)}
                   coverUrl={ep.coverUrl}
                   color={ep.color}

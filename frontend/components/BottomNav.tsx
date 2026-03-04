@@ -9,7 +9,7 @@ import { MiniPlayer } from '@/components/MiniPlayer';
 
 const NAV_ITEMS = [
   { href: '/explore', label: 'Explore', icon: CompassIcon },
-  { href: '/shows', label: 'My Shows', icon: ShowsIcon },
+  { href: '/shows', label: 'Daily', icon: ShowsIcon },
   { href: '/profile', label: 'Profile', icon: ProfileIcon },
 ] as const;
 

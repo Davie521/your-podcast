@@ -11,6 +11,11 @@ export function episodeColor(id: string): string {
   return PALETTE[Math.abs(hash) % PALETTE.length];
 }
 
+export function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
 export function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   const mins = Math.floor(seconds / 60);

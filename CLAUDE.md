@@ -46,7 +46,7 @@ docs/              # 架构决策文档
 - 页面:
   - `app/page.tsx` — 重定向到 /explore
   - `app/explore/page.tsx` — 播客发现页（接入 /api/episodes，API 失败时降级为示例数据）
-  - `app/shows/page.tsx` — 我的播客页（接入 /api/episodes/me，需登录）
+  - `app/shows/page.tsx` — Daily Podcast 页（需登录，接入 /api/episodes/me，按兴趣生成的播客）
   - `app/episode/[id]/page.tsx` — 播客详情页（接入 /api/episodes/{id}）
   - `app/login/page.tsx` — 登录页（Google/GitHub OAuth）
   - `app/profile/page.tsx` — 个人资料页（需登录，显示用户信息）
@@ -63,7 +63,7 @@ docs/              # 架构决策文档
 - Hooks:
   - `hooks/useAuth.ts` / `hooks/useAuthDispatch.ts` — 认证状态和操作
   - `hooks/useAudioState.ts` / `hooks/useAudioDispatch.ts` — 音频状态和操作
-- 工具: `lib/format.ts`（episodeColor 颜色哈希 + formatDuration 时长格式化）
+- 工具: `lib/format.ts`（episodeColor 颜色哈希 + formatDate 日期格式化 + formatDuration 时长格式化）
 - 类型: `types/audio.ts`（Episode, EpisodeWithSources, Source）, `types/auth.ts`
 - API 客户端: `lib/api.ts`（fetch wrapper + episodes API 适配器，snake_case → camelCase）
 - 降级数据: `data/episodes.ts`（FALLBACK_EPISODES，API 不可用时使用）

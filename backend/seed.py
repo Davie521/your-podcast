@@ -19,8 +19,8 @@ SYSTEM_EMAIL = "seed@your-podcast.local"
 
 SAMPLE_EPISODES = [
     {
-        "title": "Your Podcast — 2026-03-01",
-        "description": "OpenAI launches GPT-5, Apple WWDC 2026 preview, Nvidia hits $4T market cap",
+        "title": "GPT-5 Launch, WWDC Preview, Nvidia Hits $4T",
+        "description": "GPT-5 · WWDC 2026 · Nvidia $4T",
         "duration": 480,
         "sources": [
             {"title": "OpenAI launches GPT-5 with massive multimodal reasoning improvements", "url": "https://techcrunch.com/example-1", "source": "TechCrunch"},
@@ -41,8 +41,8 @@ SAMPLE_EPISODES = [
         ],
     },
     {
-        "title": "Your Podcast — 2026-02-28",
-        "description": "Rust 2026 Edition released, WebGPU lands in Safari, Meta open-sources Llama 4",
+        "title": "Rust 2026 Edition, WebGPU Goes Cross-Browser",
+        "description": "Rust 2026 · WebGPU · Llama 4",
         "duration": 420,
         "sources": [
             {"title": "Rust 2026 Edition officially released with stable async traits", "url": "https://arstechnica.com/example-2", "source": "Ars Technica"},
@@ -58,8 +58,8 @@ SAMPLE_EPISODES = [
         ],
     },
     {
-        "title": "Your Podcast — 2026-02-27",
-        "description": "GitHub Copilot X update, Tesla FSD V13 expands to Europe, Google launches Project Astra",
+        "title": "Copilot X Upgrade, Tesla FSD Hits Europe",
+        "description": "Copilot X · Tesla FSD V13 · Project Astra",
         "duration": 360,
         "sources": [
             {"title": "GitHub Copilot X major update: full repository context understanding", "url": "https://techcrunch.com/example-2", "source": "TechCrunch"},
@@ -84,7 +84,7 @@ async def seed(db: D1Client) -> None:
         user = await d1_database.upsert_user(
             db,
             email=SYSTEM_EMAIL,
-            name="Seed User",
+            name="Yifan",
             avatar_url="",
             provider="system",
             provider_id="seed",
