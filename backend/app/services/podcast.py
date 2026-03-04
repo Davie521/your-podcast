@@ -13,6 +13,12 @@ logger = logging.getLogger(__name__)
 
 _SPEAKER_MAP = {"Person1": "Alex", "Person2": "Jordan"}
 _TAG_PATTERN = re.compile(r"<(Person[12])>(.*?)</\1>", re.DOTALL)
+# Strip LLM scratchpad/thinking blocks that some models emit before the dialogue
+_SCRATCHPAD_PATTERN = re.compile(
+    r"^\(scratchpad\).*?(?=<Person[12]>)|"
+    r"```scratchpad\n.*?```\n?",
+    re.DOTALL,
+)
 
 
 class ScriptLine(TypedDict):
@@ -90,6 +96,7 @@ def _generate_transcript(text: str, api_key: str) -> str | None:
             text=text,
             transcript_only=True,
             conversation_config=_CONVERSATION_CONFIG,
+            llm_model_name="gemini-2.5-flash-lite",
         )
         if result:
             ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -106,6 +113,8 @@ def _generate_transcript(text: str, api_key: str) -> str | None:
 
 def _parse_transcript(text: str) -> list[ScriptLine]:
     """Parse Podcastfy's <Person1>/<Person2> XML transcript into ScriptLines."""
+    # Strip any LLM scratchpad/thinking that precedes the actual dialogue
+    text = _SCRATCHPAD_PATTERN.sub("", text)
     lines: list[ScriptLine] = []
     for match in _TAG_PATTERN.finditer(text):
         tag, content = match.group(1), match.group(2).strip()

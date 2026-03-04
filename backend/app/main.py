@@ -8,20 +8,21 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
-from app.database import create_db_and_tables
-from app.models import Episode, Source, Task, TranscriptLine, User  # noqa: F401 — register tables
 from app.routers import auth, episodes, generate, onboarding, tasks
 
 logger = logging.getLogger(__name__)
 
+settings = get_settings()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
     yield
+    # Close the shared D1 client if it was created
+    from app.database import _d1_client
+    if _d1_client is not None:
+        await _d1_client.aclose()
 
-
-settings = get_settings()
 
 app = FastAPI(title="Your Podcast API", lifespan=lifespan)
 

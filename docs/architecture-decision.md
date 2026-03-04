@@ -108,7 +108,9 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 - 与 R2 同在 Cloudflare 生态，统一管理访问权限
 - 播客元信息数据量小，D1 完全够用
 - 后端通过 Cloudflare D1 REST API 访问（`https://api.cloudflare.com/client/v4/accounts/{id}/d1/database/{id}/query`）
-- 当前代码仍使用 SQLite，迁移到 D1 是 issue #42 的待办项
+- 已完成从 SQLite/SQLAlchemy 迁移到 D1 REST API（issue #42）
+- 后端使用 `app/services/d1.py`（D1Client）+ `app/d1_database.py`（查询层）访问 D1
+- 初始化表结构：`python init_d1.py`
 
 ### 排除理由
 
@@ -136,11 +138,11 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 │  │feedparser │  │ 筛选8-10 │  │ 对话脚本   │  │ 逐句合成  │   │
 │  └──────────┘  └──────────┘  └───────────┘  └────┬─────┘   │
 │                                                    │         │
-│  ┌──────────┐                    ┌────────────────┘         │
-│  │ SQLite   │← 存元信息          ▼                          │
-│  │ Litestream│                 ffmpeg 合并 MP3               │
-│  │  备份到R2 │                    │                          │
-│  └──────────┘                    ▼                          │
+│  ┌──────────────┐                ┌────────────────┘         │
+│  │ Cloudflare D1│← 存元信息       ▼                          │
+│  │ (REST API)   │             ffmpeg 合并 MP3                │
+│  └──────────────┘                │                          │
+│                                  ▼                          │
 │                           上传 MP3 到 R2                     │
 └──────────────────────────────────────────────────────────---┘
                       ▼
