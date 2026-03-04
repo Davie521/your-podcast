@@ -1,6 +1,5 @@
 import logging
 import os
-import socket
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -37,22 +36,16 @@ origins = [
 ]
 
 # In dev, allow LAN origins for mobile testing
+dev_origin_regex = None
 if settings.is_dev:
     origins.append("http://localhost:3001")
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-        if local_ip.startswith(("192.168.", "10.", "172.")):
-            origins.append(f"http://{local_ip}:3000")
-            origins.append(f"http://{local_ip}:3001")
-    except OSError:
-        pass
+    # Allow any device on RFC 1918 LAN subnets (any port)
+    dev_origin_regex = r"http://(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in origins if o],
+    allow_origin_regex=dev_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
