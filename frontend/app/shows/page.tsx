@@ -8,7 +8,7 @@ import { EpisodeRow } from '@/components/EpisodeRow';
 import { useAudioState } from '@/hooks/useAudioState';
 import { useAudioDispatch } from '@/hooks/useAudioDispatch';
 import { fetchMyEpisodes } from '@/lib/api';
-import { formatDuration } from '@/lib/format';
+import { formatDate, formatDuration } from '@/lib/format';
 
 type LoadState = 'loading' | 'loaded' | 'error';
 
@@ -41,9 +41,9 @@ export default function ShowsPage() {
       <main className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}>
         {/* Header */}
         <div className="flex flex-col gap-3 mb-10 animate-fade-in">
-          <h1 className="font-serif text-4xl leading-10 text-[#111]">My Shows</h1>
+          <h1 className="font-serif text-4xl leading-10 text-[#111]">Daily Podcast</h1>
           <p className="font-serif italic text-[14px] text-[#666] leading-5 opacity-70">
-            Your saved AI-generated podcasts
+            AI-generated podcasts based on your interests
           </p>
         </div>
 
@@ -77,16 +77,13 @@ export default function ShowsPage() {
 
         {loadState === 'loaded' && episodes.length > 0 && (
           <section>
-            <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4 animate-fade-in anim-delay-1">
-              Recent
-            </h2>
             <div className="flex flex-col gap-4">
               {episodes.map((ep, index) => (
                 <EpisodeRow
                   key={ep.id}
                   title={ep.title}
                   description={ep.description}
-                  creatorName={ep.creatorName}
+                  creatorName={formatDate(ep.publishedAt)}
                   duration={formatDuration(ep.duration)}
                   coverUrl={ep.coverUrl}
                   color={ep.color}
