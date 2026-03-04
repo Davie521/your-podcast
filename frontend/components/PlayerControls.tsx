@@ -8,8 +8,9 @@ import { SkipBackIcon } from '@/components/icons/SkipBackIcon';
 import { SkipForwardIcon } from '@/components/icons/SkipForwardIcon';
 
 export function PlayerControls() {
-  const { isPlaying } = useAudioState();
+  const { isPlaying, currentEpisode } = useAudioState();
   const { pause, resume, skipForward, skipBack } = useAudioDispatch();
+  const color = currentEpisode?.color ?? '#111';
 
   const PlayPauseIcon = isPlaying ? PauseIcon : PlayIcon;
 
@@ -30,7 +31,8 @@ export function PlayerControls() {
         type="button"
         onClick={isPlaying ? pause : resume}
         aria-label={isPlaying ? 'Pause' : 'Play'}
-        className={`size-16 rounded-full bg-[#111] flex items-center justify-center shadow-lg transition-all duration-150 active:scale-90 active:bg-[#333] ${isPlaying ? 'animate-pulse-ring' : ''}`}
+        className={`size-16 rounded-full flex items-center justify-center shadow-md transition-all duration-150 active:scale-90 active:brightness-110 ${isPlaying ? 'animate-pulse-ring' : ''}`}
+        style={{ backgroundColor: color, '--ring-color': color } as React.CSSProperties}
       >
         <PlayPauseIcon className="size-6 text-white" />
       </button>

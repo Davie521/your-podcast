@@ -40,8 +40,8 @@ body {
 }
 
 @keyframes pulse-ring {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(17,17,17,0.3); }
-  50%      { box-shadow: 0 0 0 6px rgba(17,17,17,0); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring-color, #111) 30%, transparent); }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--ring-color, #111) 0%, transparent); }
 }
 
 .animate-slide-up {
