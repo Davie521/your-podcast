@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthDispatch } from '@/hooks/useAuthDispatch';
@@ -12,11 +12,12 @@ export default function LoginPage() {
   const { login } = useAuthDispatch();
   const [devLoading, setDevLoading] = useState(false);
   const [devError, setDevError] = useState('');
-  const [showDevLogin, setShowDevLogin] = useState(false);
-
-  useEffect(() => {
-    setShowDevLogin(isLocalDev());
-  }, []);
+  // useSyncExternalStore returns false on server, true on client if local dev
+  const showDevLogin = useSyncExternalStore(
+    () => () => {},
+    () => isLocalDev(),
+    () => false,
+  );
 
   useEffect(() => {
     if (status === 'authenticated') {
