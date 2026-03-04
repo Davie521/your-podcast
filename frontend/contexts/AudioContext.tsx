@@ -55,7 +55,9 @@ export function AudioProvider({ children }: AudioProviderProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  });
 
   const clearTimeInterval = useCallback(() => {
     if (intervalRef.current) {
@@ -227,7 +229,6 @@ export function AudioProvider({ children }: AudioProviderProps) {
   return (
     <AudioStateContext value={state}>
       <AudioDispatchContext value={dispatchActions}>
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <audio ref={audioRef} preload="metadata" hidden />
         {children}
       </AudioDispatchContext>
