@@ -1,27 +1,8 @@
 'use client';
 
 import { BottomNav } from '@/components/BottomNav';
+import { ChevronRightIcon } from '@/components/icons/ChevronRightIcon';
 import { useAudioState } from '@/hooks/useAudioState';
-
-function ChevronRightIcon() {
-  return (
-    <svg
-      className="size-[18px] text-[#c0c0b5]"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M9 18L15 12L9 6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function SettingRow({
   label,
@@ -41,7 +22,7 @@ function SettingRow({
           <p className="font-inter text-[12px] text-[#666] mt-0.5">{subtitle}</p>
         )}
       </div>
-      <ChevronRightIcon />
+      <ChevronRightIcon className="size-[18px] text-[#c0c0b5]" />
     </button>
   );
 }
@@ -63,6 +44,7 @@ export default function ProfilePage() {
           </p>
         </div>
 
+        {/* TODO: Replace hardcoded user data with auth context once login is implemented */}
         {/* Profile row — left-aligned like an episode row */}
         <button
           type="button"
@@ -80,7 +62,7 @@ export default function ProfilePage() {
             <p className="font-serif font-bold text-[16px] leading-5 text-[#111]">Mark</p>
             <p className="font-inter text-[12px] text-[#666] mt-1">@mark</p>
           </div>
-          <ChevronRightIcon />
+          <ChevronRightIcon className="size-[18px] text-[#c0c0b5]" />
         </button>
 
         {/* General section — same pattern as Shows "Recent" */}
