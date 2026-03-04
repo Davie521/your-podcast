@@ -2,3 +2,4 @@
 .playwright-mcp/
 .wrangler/
 screenshots/
+*.mp3

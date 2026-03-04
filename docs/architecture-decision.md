@@ -107,6 +107,7 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 - 零运维，无额外费用
 - Litestream 自动备份到 R2，数据安全有保障
 - 播客元信息数据量小，SQLite 完全够用
+- **Cloudflare D1 已评估并排除**：D1 REST API 延迟高、绑定 Workers 才高效，引入 Cloudflare Workers 层会大幅增加架构复杂度，收益不足以抵消成本
 
 ### 排除理由
 
@@ -165,7 +166,7 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 | RSS | feedparser | 成熟稳定的 RSS 解析库 |
 | AI 筛选 | Google Gemini | 从全部文章挑 8-10 篇最有价值的 |
 | 脚本生成 | Podcastfy（备选 Gemini prompt） | 生成双主持人对话脚本 |
-| TTS | GLM 智谱 | 中文效果好，支持双声线 |
+| TTS | Inworld TTS（默认）/ Google Gemini TTS（备选） | 双声线 Alex + Jordan，支持切换 |
 | 音频处理 | ffmpeg (pydub) | 拼接语音片段为 MP3 |
 | 文件存储 | Cloudflare R2 | 免费 10GB，全球 CDN，S3 兼容 |
 | 数据库 | SQLite + Litestream | 零运维，自动备份到 R2 |
