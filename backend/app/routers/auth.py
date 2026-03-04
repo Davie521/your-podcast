@@ -185,9 +185,8 @@ async def dev_login(
     db: D1Client = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
-    """Log in as the seed user without OAuth. Only works when session_secret is
-    the default value (i.e. local dev without a real secret configured)."""
-    if settings.session_secret != "change-me":
+    """Log in as the seed user without OAuth. Only available in development."""
+    if not settings.is_dev:
         raise HTTPException(status_code=404, detail="Not found")
 
     user = await d1_database.get_user_by_email(db, "seed@your-podcast.local")

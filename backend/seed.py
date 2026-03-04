@@ -12,7 +12,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from app import d1_database
-from app.services.d1 import D1Client, get_d1_client
+from app.database import create_db_client
+from app.services.d1 import D1Client
 
 SYSTEM_EMAIL = "seed@your-podcast.local"
 
@@ -162,11 +163,14 @@ async def async_main() -> None:
     parser.add_argument("--clear", action="store_true", help="Clear seed data before inserting")
     args = parser.parse_args()
 
-    db = get_d1_client()
+    db = create_db_client()
 
-    if args.clear:
-        await clear(db)
-    await seed(db)
+    try:
+        if args.clear:
+            await clear(db)
+        await seed(db)
+    finally:
+        await db.aclose()
 
 
 def main() -> None:
