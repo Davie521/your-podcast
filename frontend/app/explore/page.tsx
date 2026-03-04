@@ -1,63 +1,74 @@
 'use client';
 
 import { useState } from 'react';
-import { PodcastCard } from '@/components/PodcastCard';
 import { SearchInput } from '@/components/SearchInput';
+import { EpisodeRow } from '@/components/EpisodeRow';
 import { BottomNav } from '@/components/BottomNav';
-import type { Podcast } from '@/types/podcast';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import type { Episode } from '@/types/podcast';
 
-const SAMPLE_PODCASTS: Podcast[] = [
+const DISCOVER_EPISODES: Episode[] = [
   {
-    id: '1',
-    title: 'The Modern Nomad',
-    author: 'Sarah Chen / Life & Travel',
-    description: 'Explore unique voices and independent stories across the globe.',
-    color: '#009689',
-  },
-  {
-    id: '2',
-    title: 'Sonic Diaries',
-    author: 'Sarah Chen / Hot Diaries',
-    description: 'Explore unique voices and independent stories across the globe.',
-    color: '#432dd7',
-  },
-  {
-    id: '3',
-    title: 'Narrative Waves',
-    author: 'Sarah Chen / Life & Travel',
-    description: 'Explore unique voices and independent stories across the globe.',
-    color: '#ff637e',
-  },
-  {
-    id: '4',
-    title: 'Culture Club',
-    author: 'Sarah Stones / Culture Club',
-    description: 'Explore unique voices and independent stories across the globe.',
+    id: 'disc-1',
+    title: 'Rust vs Go in 2026: The Definitive Take',
+    subtitle: 'Rust / Go / Performance',
+    creator: '@dev.alex',
+    duration: '9 min',
     color: '#f54900',
+    imageUrl: '/covers/rust-vs-go.png',
   },
   {
-    id: '5',
-    title: 'Daily Brief',
-    author: 'Host: Chen / Life & Brief',
-    description: 'Explore unique voices and independent stories across the globe.',
+    id: 'disc-2',
+    title: 'Quantum Computing Explained Simply',
+    subtitle: 'Quantum / Qubits / Google',
+    creator: '@physics.dan',
+    duration: '11 min',
+    color: '#009689',
+    imageUrl: '/covers/quantum.png',
+  },
+  {
+    id: 'disc-3',
+    title: 'Claude Code and the AI Coding Revolution',
+    subtitle: 'AI / Coding / Agents',
+    creator: '@techie.sam',
+    duration: '14 min',
+    color: '#432dd7',
+    imageUrl: '/covers/claude-coding.png',
+  },
+  {
+    id: 'disc-4',
+    title: 'Are Podcasts Dying or Evolving?',
+    subtitle: 'Media / Audio / Trends',
+    creator: '@media.jan',
+    duration: '8 min',
     color: '#155dfc',
+    imageUrl: '/covers/death-podcasts.png',
+  },
+  {
+    id: 'disc-5',
+    title: 'The Science of Sleep & Productivity',
+    subtitle: 'Sleep / Focus / Deep Work',
+    creator: '@sarah.k',
+    duration: '10 min',
+    color: '#ff637e',
+    imageUrl: '/covers/sleep-science.png',
   },
 ];
 
 export default function ExplorePage() {
   const [search, setSearch] = useState('');
+  const { playingId, toggle } = useAudioPlayer();
 
-  const filteredPodcasts = SAMPLE_PODCASTS.filter(
-    (p) =>
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.author.toLowerCase().includes(search.toLowerCase())
+  const filtered = DISCOVER_EPISODES.filter(
+    (ep) =>
+      ep.title.toLowerCase().includes(search.toLowerCase()) ||
+      ep.creator.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-cream">
-      <main className="mx-auto max-w-[428px] px-6 pt-6 pb-24">
+      <main className="mx-auto w-full max-w-[428px] px-6 pt-6 pb-24">
         <div className="flex flex-col gap-8">
-          {/* Header */}
           <div className="flex flex-col gap-6">
             <h1 className="font-serif text-4xl leading-10 text-[#111]">
               Discover
@@ -65,21 +76,23 @@ export default function ExplorePage() {
             <SearchInput value={search} onChange={setSearch} />
           </div>
 
-          {/* Podcast List */}
-          <div className="flex flex-col gap-6">
-            {filteredPodcasts.length === 0 ? (
-              <p className="font-[family-name:var(--font-inter)] text-sm text-[#666] text-center py-8">
+          <div className="flex flex-col gap-4">
+            {filtered.length === 0 ? (
+              <p className="font-inter text-sm text-[#666] text-center py-8">
                 No podcasts found.
               </p>
             ) : (
-              filteredPodcasts.map((podcast) => (
-                <PodcastCard
-                  key={podcast.id}
-                  title={podcast.title}
-                  author={podcast.author}
-                  description={podcast.description}
-                  color={podcast.color}
-                  imageUrl={podcast.imageUrl}
+              filtered.map((ep) => (
+                <EpisodeRow
+                  key={ep.id}
+                  title={ep.title}
+                  subtitle={ep.subtitle}
+                  creator={ep.creator}
+                  duration={ep.duration}
+                  color={ep.color}
+                  imageUrl={ep.imageUrl}
+                  isPlaying={playingId === ep.id}
+                  onPlay={() => toggle(ep.id)}
                 />
               ))
             )}
