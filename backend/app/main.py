@@ -5,8 +5,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.config import get_settings
 from app.routers import auth, episodes, generate, onboarding, tasks
@@ -26,6 +28,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Your Podcast API", lifespan=lifespan)
+
+# Trust proxy headers (X-Forwarded-Proto, X-Forwarded-For) so that
+# request.url_for() generates https:// URLs behind Railway's reverse proxy.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # SessionMiddleware is required by authlib for OAuth state storage
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)

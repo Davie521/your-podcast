@@ -42,13 +42,14 @@ def _register_oauth(settings: Settings) -> None:
 
 def _set_session_cookie(response: Response, user: dict, settings: Settings) -> None:
     token = create_session_cookie(user["id"], settings)
+    is_local = settings.frontend_url.startswith("http://localhost")
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=token,
         max_age=SESSION_MAX_AGE,
         httponly=True,
-        samesite="lax",
-        secure=not settings.frontend_url.startswith("http://localhost"),
+        samesite="lax" if is_local else "none",
+        secure=not is_local,
     )
 
 
@@ -199,11 +200,12 @@ async def dev_login(
 
 @router.post("/logout")
 async def logout(settings: Settings = Depends(get_settings)):
+    is_local = settings.frontend_url.startswith("http://localhost")
     response = Response(content='{"ok": true}', media_type="application/json")
     response.delete_cookie(
         key=SESSION_COOKIE_NAME,
         httponly=True,
-        samesite="lax",
-        secure=not settings.frontend_url.startswith("http://localhost"),
+        samesite="lax" if is_local else "none",
+        secure=not is_local,
     )
     return response
