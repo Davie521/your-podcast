@@ -27,7 +27,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
-        run: uv sync --frozen --no-dev
+        run: uv sync --frozen --no-dev --extra generate
 
       - name: Install Playwright browsers
         run: uv run playwright install --with-deps chromium
