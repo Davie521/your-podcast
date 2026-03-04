@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, field_validator
-from sqlmodel import Session
 
+from app import d1_database
 from app.auth import get_current_user
-from app.database import get_session
-from app.models import User
+from app.database import get_db
+from app.services.d1 import D1Client
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
@@ -26,17 +26,13 @@ class InterestsBody(BaseModel):
 @router.post("/interests")
 async def set_interests(
     body: InterestsBody,
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+    db: D1Client = Depends(get_db),
 ):
-    # Reassign list to ensure SQLAlchemy detects the mutation
-    current_user.interests = body.interests
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
-    return {"interests": current_user.interests}
+    await d1_database.update_user_interests(db, current_user["id"], body.interests)
+    return {"interests": body.interests}
 
 
 @router.get("/interests")
-async def get_interests(current_user: User = Depends(get_current_user)):
-    return {"interests": current_user.interests}
+async def get_interests(current_user: dict = Depends(get_current_user)):
+    return {"interests": current_user["interests"]}

@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CompassIcon } from '@/components/icons/CompassIcon';
 import { ShowsIcon } from '@/components/icons/ShowsIcon';
+import { ProfileIcon } from '@/components/icons/ProfileIcon';
 import { MiniPlayer } from '@/components/MiniPlayer';
 
 const NAV_ITEMS = [
   { href: '/explore', label: 'Explore', icon: CompassIcon },
   { href: '/shows', label: 'My Shows', icon: ShowsIcon },
+  { href: '/profile', label: 'Profile', icon: ProfileIcon },
 ] as const;
 
 export function BottomNav() {

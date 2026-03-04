@@ -1,10 +1,10 @@
 from fastapi import Cookie, Depends, HTTPException, status
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
-from app.database import get_session
-from app.models import User
+from app.database import get_db
+from app.services.d1 import D1Client
+from app import d1_database
 
 SESSION_COOKIE_NAME = "session"
 SESSION_MAX_AGE = 30 * 24 * 3600  # 30 days
@@ -29,29 +29,29 @@ def _decode_session(token: str, settings: Settings) -> str | None:
 
 
 async def get_current_user(
-    session: Session = Depends(get_session),
+    db: D1Client = Depends(get_db),
     settings: Settings = Depends(get_settings),
     session_cookie: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
-) -> User:
+) -> dict:
     if not session_cookie:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     user_id = _decode_session(session_cookie, settings)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
-    user = session.exec(select(User).where(User.id == user_id)).first()
+    user = await d1_database.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
 
 async def get_optional_user(
-    session: Session = Depends(get_session),
+    db: D1Client = Depends(get_db),
     settings: Settings = Depends(get_settings),
     session_cookie: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
-) -> User | None:
+) -> dict | None:
     if not session_cookie:
         return None
     user_id = _decode_session(session_cookie, settings)
     if not user_id:
         return None
-    return session.exec(select(User).where(User.id == user_id)).first()
+    return await d1_database.get_user_by_id(db, user_id)
