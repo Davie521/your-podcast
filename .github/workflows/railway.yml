@@ -48,7 +48,7 @@ jobs:
       # Production deploy on push to main or manual trigger
       - name: Deploy to Production
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        run: railway up -d --service ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: railway up -d --service your-podcast
         working-directory: backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
