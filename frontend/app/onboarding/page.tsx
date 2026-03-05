@@ -4,6 +4,7 @@ import { Suspense, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { request } from '@/lib/api';
 
 interface Category {
   readonly id: string;
@@ -224,7 +225,8 @@ function OnboardingContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const backHref = searchParams.get('back') ?? '/signup';
+  const backParam = searchParams.get('back');
+  const backHref = backParam && backParam.startsWith('/') && !backParam.startsWith('//') ? backParam : '/login';
 
   const [usableSize, setUsableSize] = useState({ width: 350, height: 600 });
 
@@ -264,9 +266,10 @@ function OnboardingContent() {
     const activeNodes: (FlatNode & { x: number, y: number, r: number, vx: number, vy: number })[] = [];
 
     if (!expandedGroup) {
-      // Show only groups
-      INITIAL_GROUPS.forEach(g => {
-        activeNodes.push({ ...g, type: 'group', groupId: g.id, x: Math.random() - 0.5, y: Math.random() - 0.5, r: NODE_RADII.get(g.id)! + PADDING, vx: 0, vy: 0 });
+      // Show only groups — use evenly spaced angles for deterministic initial positions
+      INITIAL_GROUPS.forEach((g, i) => {
+        const angle = (i / INITIAL_GROUPS.length) * Math.PI * 2;
+        activeNodes.push({ ...g, type: 'group', groupId: g.id, x: Math.cos(angle), y: Math.sin(angle), r: NODE_RADII.get(g.id)! + PADDING, vx: 0, vy: 0 });
       });
     } else {
       // Show expanded group, its categories, and other groups
@@ -275,12 +278,14 @@ function OnboardingContent() {
 
       activeNodes.push({ ...expanded, type: 'group', groupId: expanded.id, x: 0, y: 0, r: NODE_RADII.get(expanded.id)! + PADDING, vx: 0, vy: 0 });
 
-      expanded.categories.forEach(cat => {
-        activeNodes.push({ ...cat, type: 'category', groupId: expanded.id, emoji: expanded.emoji, x: (Math.random() - 0.5) * 10, y: (Math.random() - 0.5) * 10, r: NODE_RADII.get(cat.id)! + PADDING, vx: 0, vy: 0 });
+      expanded.categories.forEach((cat, i) => {
+        const angle = (i / expanded.categories.length) * Math.PI * 2;
+        activeNodes.push({ ...cat, type: 'category', groupId: expanded.id, emoji: expanded.emoji, x: Math.cos(angle) * 5, y: Math.sin(angle) * 5, r: NODE_RADII.get(cat.id)! + PADDING, vx: 0, vy: 0 });
       });
 
-      others.forEach(g => {
-        activeNodes.push({ ...g, type: 'group', groupId: g.id, x: (Math.random() - 0.5) * 50, y: (Math.random() - 0.5) * 50, r: NODE_RADII.get(g.id)! + PADDING, vx: 0, vy: 0 });
+      others.forEach((g, i) => {
+        const angle = (i / others.length) * Math.PI * 2;
+        activeNodes.push({ ...g, type: 'group', groupId: g.id, x: Math.cos(angle) * 50, y: Math.sin(angle) * 50, r: NODE_RADII.get(g.id)! + PADDING, vx: 0, vy: 0 });
       });
     }
 
@@ -314,8 +319,8 @@ function OnboardingContent() {
 
           if (dist < minDist) {
             const overlap = minDist - dist;
-            const nx = dist === 0 ? (Math.random() - 0.5) : dx / dist;
-            const ny = dist === 0 ? (Math.random() - 0.5) : dy / dist;
+            const nx = dist === 0 ? 1 : dx / dist;
+            const ny = dist === 0 ? 0 : dy / dist;
 
             const correctionX = nx * (overlap / 2);
             const correctionY = ny * (overlap / 2);
@@ -513,7 +518,19 @@ function OnboardingContent() {
           )}
           <button
             type="button"
-            onClick={() => router.push('/explore')}
+            onClick={async () => {
+              if (selected.size > 0) {
+                try {
+                  await request('/api/onboarding/interests', {
+                    method: 'POST',
+                    body: JSON.stringify({ interests: [...selected] }),
+                  });
+                } catch {
+                  // Continue even if saving fails (user may not be logged in)
+                }
+              }
+              router.push('/explore');
+            }}
             className="w-full h-14 bg-black rounded-full shadow-[0px_10px_30px_rgba(0,0,0,0.15)] font-sans font-bold text-[12px] text-white tracking-[2.5px] uppercase transition-transform active:scale-[0.98]"
           >
             ENTER VOX

@@ -32,6 +32,8 @@ app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
 origins = [
     "http://localhost:3000",
+    "https://your-podcast.vercel.app",
+    os.getenv("FRONTEND_URL", ""),
 ]
 
 # In dev, allow LAN origins for mobile testing

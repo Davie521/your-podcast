@@ -5,25 +5,25 @@ We have generated three distinct design style sets based on your feedback. All d
 ## Style Set 1: Minimalist Flat (Dark)
 High-contrast, professional, and efficient. Uses a deep charcoal background with electric blue accents.
 
-- [Login](file:///Users/chris/Documents/your-podcast/doc/designs/set1/login.png)
-- [Profile](file:///Users/chris/Documents/your-podcast/doc/designs/set1/profile.png)
-- [Onboarding](file:///Users/chris/Documents/your-podcast/doc/designs/set1/onboarding.png)
-- [Discovery](file:///Users/chris/Documents/your-podcast/doc/designs/set1/discovery.png)
+- [Login](./set1/login.png)
+- [Profile](./set1/profile.png)
+- [Onboarding](./set1/onboarding.png)
+- [Discovery](./set1/discovery.png)
 
 ## Style Set 2: Clean Editorial (Light)
 Typography-focused design inspired by premium magazines. Uses ample white space and elegant serif fonts.
 
-- [Login](file:///Users/chris/Documents/your-podcast/doc/designs/set2/login.png)
-- [Profile](file:///Users/chris/Documents/your-podcast/doc/designs/set2/profile.png)
-- [Onboarding](file:///Users/chris/Documents/your-podcast/doc/designs/set2/onboarding.png)
-- [Discovery](file:///Users/chris/Documents/your-podcast/doc/designs/set2/discovery.png)
+- [Login](./set2/login.png)
+- [Profile](./set2/profile.png)
+- [Onboarding](./set2/onboarding.png)
+- [Discovery](./set2/discovery.png)
 
 ## Style Set 3: Bold Typography / Swiss (Industrial)
 Structural and grid-focused. Uses a beige background, bold sans-serif type, and solid orange accents.
 
-- [Login](file:///Users/chris/Documents/your-podcast/doc/designs/set3/login.png)
-- [Profile](file:///Users/chris/Documents/your-podcast/doc/designs/set3/profile.png)
-- [Onboarding](file:///Users/chris/Documents/your-podcast/doc/designs/set3/onboarding.png)
+- [Login](./set3/login.png)
+- [Profile](./set3/profile.png)
+- [Onboarding](./set3/onboarding.png)
 - *Note: Discovery screen pending due to generation quota.*
 
 ---
