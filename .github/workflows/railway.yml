@@ -3,10 +3,8 @@ name: Railway Deploy
 on:
   push:
     branches: [main]
-    paths: ['backend/**', '.github/workflows/railway.yml']
   pull_request:
     branches: [main]
-    paths: ['backend/**', '.github/workflows/railway.yml']
   workflow_dispatch:
 
 permissions:
