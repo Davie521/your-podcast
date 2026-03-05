@@ -47,7 +47,7 @@ def _set_session_cookie(response: Response, user: dict, settings: Settings) -> N
         value=token,
         max_age=SESSION_MAX_AGE,
         httponly=True,
-        samesite="lax" if is_http else "none",
+        samesite="lax",
         secure=not is_http,
     )
 
@@ -204,7 +204,7 @@ async def logout(settings: Settings = Depends(get_settings)):
     response.delete_cookie(
         key=SESSION_COOKIE_NAME,
         httponly=True,
-        samesite="lax" if is_http else "none",
+        samesite="lax",
         secure=not is_http,
     )
     return response
