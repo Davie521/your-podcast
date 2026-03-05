@@ -30,6 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a podcast episode")
     parser.add_argument("--user-id", help="User ID to generate for (creates system user if omitted)")
     parser.add_argument("--feeds", help="Comma-separated RSS feed URLs (overrides env/defaults)")
+    parser.add_argument("--keywords", help="Comma-separated keywords (e.g. AI,Science) to fetch from curated RSS sources")
     parser.add_argument("--date", help="Episode date tag (YYYY-MM-DD, defaults to today)")
     parser.add_argument("--dry-run", action="store_true", help="Run pipeline but skip R2 upload")
     return parser.parse_args()
@@ -74,6 +75,7 @@ async def async_main() -> None:
     db = create_db_client(settings)
 
     feed_urls = resolve_feeds(args, settings.rss_feeds)
+    keywords = [k.strip() for k in args.keywords.split(",") if k.strip()] if args.keywords else None
     episode_date = args.date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     # Resolve user
@@ -100,6 +102,7 @@ async def async_main() -> None:
         db=db,
         settings=settings,
         dry_run=args.dry_run,
+        keywords=keywords,
     )
 
     if episode:

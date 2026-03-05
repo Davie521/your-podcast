@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api", tags=["generate"])
 
 class GenerateRequest(BaseModel):
     feeds: list[str] | None = None
+    keywords: list[str] | None = None
     date: str | None = None
 
 
@@ -43,6 +44,7 @@ async def _run_in_background(
     feed_urls: list[str],
     episode_date: str,
     settings: Settings,
+    keywords: list[str] | None = None,
 ) -> None:
     """Background task wrapper — creates its own DB client."""
     from app.services.pipeline import run_pipeline
@@ -61,6 +63,7 @@ async def _run_in_background(
             task_id=task_id,
             db=db,
             settings=settings,
+            keywords=keywords,
         )
     finally:
         await db.aclose()
@@ -94,6 +97,7 @@ async def generate_episode(
         feed_urls,
         episode_date,
         settings,
+        body.keywords,
     )
 
     return GenerateResponse(
