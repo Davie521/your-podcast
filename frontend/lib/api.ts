@@ -30,11 +30,10 @@ function getApiBaseUrl(): string {
     return '';
   }
 
-  // Server-side (SSR / build)
+  // Server-side (SSR / build) — must use absolute URL for Node fetch
   const envBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (envBaseUrl) return normalizeBaseUrl(envBaseUrl);
-  if (process.env.NODE_ENV === 'development') return 'http://localhost:8000';
-  return '';
+  return 'http://localhost:8000';
 }
 
 // ── Error ───────────────────────────────────────────────────
