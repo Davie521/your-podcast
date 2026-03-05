@@ -9,10 +9,10 @@ ENV UV_LINK_MODE=copy
 ENV PYTHONUNBUFFERED=1
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
+RUN uv sync --frozen --no-install-project --no-dev --extra generate
 
 COPY . /app
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --extra generate
 
 ENV PATH="/app/.venv/bin:$PATH"
 
