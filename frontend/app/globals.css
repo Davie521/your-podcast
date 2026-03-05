@@ -25,23 +25,51 @@ body {
 /* ── Animations ── */
 
 @keyframes slide-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes pulse-ring {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring-color, #111) 30%, transparent); }
-  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--ring-color, #111) 0%, transparent); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring-color, #111) 30%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--ring-color, #111) 0%, transparent);
+  }
 }
 
 .animate-slide-up {
@@ -61,10 +89,21 @@ body {
 }
 
 /* Staggered animation delay utility */
-.anim-delay-1 { animation-delay: 100ms; }
-.anim-delay-2 { animation-delay: 200ms; }
-.anim-delay-3 { animation-delay: 300ms; }
-.anim-delay-4 { animation-delay: 400ms; }
+.anim-delay-1 {
+  animation-delay: 100ms;
+}
+
+.anim-delay-2 {
+  animation-delay: 200ms;
+}
+
+.anim-delay-3 {
+  animation-delay: 300ms;
+}
+
+.anim-delay-4 {
+  animation-delay: 400ms;
+}
 
 /* Smooth collapsible via grid trick */
 .collapsible-grid {
@@ -77,7 +116,7 @@ body {
   grid-template-rows: 1fr;
 }
 
-.collapsible-grid > div {
+.collapsible-grid>div {
   overflow: hidden;
 }
 
@@ -102,13 +141,27 @@ body {
 }
 
 @keyframes vt-fade-out {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.98); }
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
 }
 
 @keyframes vt-fade-in {
-  from { opacity: 0; transform: scale(1.02); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .vt-fixed {
@@ -118,8 +171,15 @@ body {
 /* List item staggered entry (lighter than fade-in: 8px/0.35s vs 12px/0.5s) */
 
 @keyframes list-item-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-list-item {
@@ -129,6 +189,7 @@ body {
 /* Accessibility: respect reduced motion preference */
 
 @media (prefers-reduced-motion: reduce) {
+
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none;
@@ -140,5 +201,52 @@ body {
   .animate-list-item,
   .animate-pulse-ring {
     animation: none;
+  }
+}
+
+/* ── Login Intro Overlay ── */
+
+@keyframes intro-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(14);
+    opacity: 0;
+  }
+}
+
+/* 3D Bubble styling */
+.bubble-3d {
+  background: radial-gradient(circle at 30% 30%, #4f4f56, #18181b 70%);
+  box-shadow:
+    inset -4px -4px 10px rgba(0, 0, 0, 0.8),
+    /* inner bottom shadow */
+    inset 4px 4px 10px rgba(255, 255, 255, 0.15),
+    /* inner top highlight */
+    2px 10px 20px rgba(0, 0, 0, 0.4);
+  /* ambient drop shadow */
+}
+
+@keyframes eq-bar {
+  from {
+    transform: scaleY(0.15);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes intro-exit {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    pointer-events: none;
   }
 }
