@@ -9,7 +9,6 @@ export interface User {
   readonly id: string;
   readonly name: string;
   readonly email: string;
-  readonly avatar_url: string;
   readonly interests: readonly string[];
   readonly created_at: string;
   readonly stats: UserStats;

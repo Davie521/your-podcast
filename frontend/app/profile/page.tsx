@@ -82,20 +82,11 @@ export default function ProfilePage() {
           aria-label="View profile"
           className="flex w-full items-center gap-4 pb-4 border-b border-border-warm tap-feedback animate-fade-in anim-delay-1"
         >
-          {user.avatar_url ? (
-            /* Native img: next/image incompatible with static export for external OAuth avatar URLs */
-            <img
-              src={user.avatar_url}
-              alt={user.name}
-              className="size-16 shrink-0 rounded-full object-cover"
-            />
-          ) : (
-            <div className="size-16 shrink-0 rounded-full bg-border-warm flex items-center justify-center">
-              <span className="font-serif text-[24px] text-[#111]/30 select-none leading-none">
-                {initial}
-              </span>
-            </div>
-          )}
+          <div className="size-16 shrink-0 rounded-full bg-border-warm flex items-center justify-center">
+            <span className="font-serif text-[24px] text-[#111]/30 select-none leading-none">
+              {initial}
+            </span>
+          </div>
           <div className="flex-1 min-w-0 text-left">
             <p className="font-serif font-bold text-[16px] leading-5 text-[#111]">{user.name}</p>
             <p className="font-inter text-[12px] text-[#666] mt-1">{user.email}</p>

@@ -168,7 +168,6 @@ async def me(
         "id": current_user["id"],
         "name": current_user["name"],
         "email": current_user["email"],
-        "avatar_url": current_user["avatar_url"],
         "interests": current_user["interests"],
         "created_at": current_user["created_at"],
         "stats": {
