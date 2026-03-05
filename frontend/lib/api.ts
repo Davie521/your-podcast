@@ -75,7 +75,7 @@ export async function request<T>(
 
 // ── Auth helpers ────────────────────────────────────────────
 
-export function getOAuthUrl(provider: 'google' | 'github'): string {
+export function getOAuthUrl(provider: 'google'): string {
   // Use the same base as API calls — in production this is a relative path
   // so OAuth goes through the Vercel rewrite proxy, keeping cookies first-party.
   const baseUrl = getApiBaseUrl();

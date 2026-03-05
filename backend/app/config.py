@@ -14,10 +14,6 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
 
-    # Auth - GitHub OAuth
-    github_client_id: str = ""
-    github_client_secret: str = ""
-
     # Session
     session_secret: str = "change-me"
     frontend_url: str = "http://localhost:3000"

@@ -90,7 +90,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // ── Dispatch actions ────────────────────────────────────
 
-  const login = useCallback((provider: 'google' | 'github') => {
+  const login = useCallback((provider: 'google') => {
     // OAuth needs full browser redirect, not fetch
     window.location.href = getOAuthUrl(provider);
   }, []);

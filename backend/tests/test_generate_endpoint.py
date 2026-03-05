@@ -159,7 +159,7 @@ async def test_get_task_wrong_owner(authenticated_client, db):
         email="other@example.com",
         name="Other",
         avatar_url="",
-        provider="github",
+        provider="google",
         provider_id="99999",
     )
 
