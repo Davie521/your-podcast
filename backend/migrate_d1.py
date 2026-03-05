@@ -84,7 +84,7 @@ async def _get_d1_client():
 
 async def _run_upgrade(target: str, dry_run: bool = False) -> None:
     # Dry-run doesn't need D1 credentials — generate all SQL from scratch
-    current_rev = None if dry_run else await _get_current_rev()
+    current_rev = None if dry_run else await _get_current_rev(auto_stamp=True)
 
     sql = _capture_offline_sql(target, starting_rev=current_rev)
     if not sql.strip():
@@ -110,8 +110,13 @@ async def _run_upgrade(target: str, dry_run: bool = False) -> None:
         await db.aclose()
 
 
-async def _get_current_rev() -> str | None:
-    """Query D1 for the current alembic_version."""
+async def _get_current_rev(auto_stamp: bool = False) -> str | None:
+    """Query D1 for the current alembic_version.
+
+    If auto_stamp=True and no alembic_version table exists but application tables
+    do (pre-Alembic DB), auto-stamp at the initial revision so migrations don't
+    try to recreate tables.
+    """
     db = await _get_d1_client()
     try:
         # Check if alembic_version table exists
@@ -119,6 +124,23 @@ async def _get_current_rev() -> str | None:
             "SELECT name FROM sqlite_master WHERE type='table' AND name='alembic_version'"
         )
         if not rows:
+            if auto_stamp:
+                # Check if this is a pre-Alembic DB (tables exist but no version tracking)
+                tables = await db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='user'"
+                )
+                if tables:
+                    print("Detected pre-Alembic D1 database. Auto-stamping at 0001...")
+                    await db.batch([
+                        {
+                            "sql": """CREATE TABLE IF NOT EXISTS alembic_version (
+                                version_num VARCHAR(32) NOT NULL,
+                                CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
+                            )"""
+                        },
+                        {"sql": "INSERT INTO alembic_version (version_num) VALUES (?)", "params": ["0001"]},
+                    ])
+                    return "0001"
             return None
         rows = await db.execute("SELECT version_num FROM alembic_version")
         return rows[0]["version_num"] if rows else None
