@@ -41,31 +41,30 @@ def get_applied(conn: sqlite3.Connection) -> set[str]:
 
 
 def apply_migrations(db_path: str = DB_PATH) -> None:
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    ensure_migrations_table(conn)
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        ensure_migrations_table(conn)
 
-    applied = get_applied(conn)
-    files = get_migration_files()
-    pending = [f for f in files if f not in applied]
+        applied = get_applied(conn)
+        files = get_migration_files()
+        pending = [f for f in files if f not in applied]
 
-    if not pending:
-        print("No pending migrations.")
-        return
+        if not pending:
+            print("No pending migrations.")
+            return
 
-    for fname in pending:
-        path = os.path.join(MIGRATIONS_DIR, fname)
-        with open(path) as f:
-            sql = f.read()
-        print(f"Applying {fname}...")
-        conn.executescript(sql)
-        conn.execute("INSERT INTO d1_migrations (name) VALUES (?)", [fname])
-        conn.commit()
-        print(f"  done: {fname}")
+        for fname in pending:
+            path = os.path.join(MIGRATIONS_DIR, fname)
+            with open(path) as f:
+                sql = f.read()
+            print(f"Applying {fname}...")
+            conn.executescript(sql)
+            conn.execute("INSERT INTO d1_migrations (name) VALUES (?)", [fname])
+            conn.commit()
+            print(f"  done: {fname}")
 
-    print(f"Applied {len(pending)} migration(s).")
-    conn.close()
+        print(f"Applied {len(pending)} migration(s).")
 
 
 def show_status(db_path: str = DB_PATH) -> None:

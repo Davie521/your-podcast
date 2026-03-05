@@ -38,7 +38,7 @@ def main() -> None:
     warnings.warn(
         "init_d1.py is deprecated. Use 'wrangler d1 migrations apply' "
         "for remote D1, or 'python migrate.py' for local SQLite.",
-        DeprecationWarning,
+        UserWarning,
         stacklevel=1,
     )
     parser = argparse.ArgumentParser(description="Initialize database schema")

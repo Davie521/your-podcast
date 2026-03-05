@@ -14,34 +14,32 @@ MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "migrations
 
 def _apply_migrations_sync(db_path: str) -> None:
     """Apply pending migrations using synchronous sqlite3 (called once at init)."""
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    conn.execute(
-        """CREATE TABLE IF NOT EXISTS d1_migrations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-        )"""
-    )
-    conn.commit()
-
-    applied = {r[0] for r in conn.execute("SELECT name FROM d1_migrations").fetchall()}
     if not os.path.isdir(MIGRATIONS_DIR):
-        conn.close()
         return
-    files = sorted(f for f in os.listdir(MIGRATIONS_DIR) if f.endswith(".sql"))
-    pending = [f for f in files if f not in applied]
 
-    for fname in pending:
-        with open(os.path.join(MIGRATIONS_DIR, fname)) as f:
-            sql = f.read()
-        logger.info("Applying migration %s", fname)
-        conn.executescript(sql)
-        conn.execute("INSERT INTO d1_migrations (name) VALUES (?)", [fname])
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS d1_migrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )"""
+        )
         conn.commit()
 
-    conn.close()
+        applied = {r[0] for r in conn.execute("SELECT name FROM d1_migrations").fetchall()}
+        files = sorted(f for f in os.listdir(MIGRATIONS_DIR) if f.endswith(".sql"))
+        pending = [f for f in files if f not in applied]
+
+        for fname in pending:
+            with open(os.path.join(MIGRATIONS_DIR, fname)) as f:
+                sql = f.read()
+            logger.info("Applying migration %s", fname)
+            conn.executescript(sql)
+            conn.execute("INSERT INTO d1_migrations (name) VALUES (?)", [fname])
+            conn.commit()
 
 
 class LocalSQLiteClient:
