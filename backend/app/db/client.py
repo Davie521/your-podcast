@@ -1,11 +1,21 @@
+"""DatabaseClient protocol and factory functions."""
+
 import logging
+from typing import Protocol
 
 from app.config import get_settings
-from app.types import DatabaseClient
 
 logger = logging.getLogger(__name__)
 
-_db_client: DatabaseClient | None = None
+_db_client: "DatabaseClient | None" = None
+
+
+class DatabaseClient(Protocol):
+    """Protocol shared by D1Client and LocalSQLiteClient."""
+
+    async def execute(self, sql: str, params: list | None = None) -> list[dict]: ...
+    async def batch(self, statements: list[dict]) -> list[list[dict]]: ...
+    async def aclose(self) -> None: ...
 
 
 def create_db_client(settings=None) -> DatabaseClient:

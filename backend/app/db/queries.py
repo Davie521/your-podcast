@@ -1,14 +1,13 @@
-"""Database query layer for Cloudflare D1.
+"""Database query layer — all SQL queries in one file, organized by entity.
 
-All SQL queries in one file, organized by entity.
-Every function takes a D1Client as its first parameter and returns plain dicts.
+Every function takes a DatabaseClient as its first parameter and returns plain dicts.
 """
 
 import json
 import uuid
 from datetime import datetime, timezone
 
-from app.types import DatabaseClient
+from app.db.client import DatabaseClient
 
 
 def _utcnow_iso() -> str:

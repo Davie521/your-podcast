@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, field_validator
 
-from app import d1_database
 from app.auth import get_current_user
-from app.database import get_db
-from app.types import DatabaseClient
+from app.db import DatabaseClient, get_db
+from app.db import queries
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
@@ -42,7 +41,7 @@ async def set_interests(
     current_user: dict = Depends(get_current_user),
     db: DatabaseClient = Depends(get_db),
 ):
-    await d1_database.update_user_interests(db, current_user["id"], body.interests)
+    await queries.update_user_interests(db, current_user["id"], body.interests)
     return {"interests": body.interests}
 
 

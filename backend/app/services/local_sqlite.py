@@ -6,7 +6,7 @@ import os
 import aiosqlite
 from sqlalchemy import create_engine
 
-from app.schema import metadata
+from app.db.tables import metadata
 
 logger = logging.getLogger(__name__)
 

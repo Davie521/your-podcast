@@ -25,11 +25,13 @@ docs/              # 架构决策文档
 
 - 入口: `app/main.py` (FastAPI)
 - 配置: `app/config.py` (环境变量)
-- 模型: `app/models.py` (仅含 TaskStatus 枚举)
-- Schema: `app/schema.py` (SQLAlchemy Core Table 定义，Alembic 迁移的单一事实来源)
-- 类型: `app/types.py` (DatabaseClient Protocol + TypedDict)
-- 数据库: `app/d1_database.py` (D1 查询层，返回 dict)
+- Schemas: `app/schemas.py` (Pydantic 响应模型 + TaskStatus 枚举)
+- 数据库层: `app/db/`
+  - `client.py` — DatabaseClient Protocol + 工厂函数 (get_db, create_db_client)
+  - `tables.py` — SQLAlchemy Core Table 定义（Alembic 迁移的单一事实来源）
+  - `queries.py` — SQL 查询函数（返回 dict）
 - D1 客户端: `app/services/d1.py` (Cloudflare D1 REST API 封装)
+- 本地 SQLite: `app/services/local_sqlite.py` (开发用 SQLite 适配器)
 - 迁移: `alembic/` (Alembic 配置 + 版本)，`migrate_d1.py` (D1 迁移 runner)
 - 路由: `app/routers/` — `auth.py`, `episodes.py`, `generate.py`, `tasks.py`, `onboarding.py`
 - 服务层: `app/services/`
@@ -86,7 +88,7 @@ cd backend && uv run alembic upgrade head          # 本地 SQLite
 cd backend && uv run python migrate_d1.py upgrade head   # D1（需环境变量）
 cd backend && uv run python migrate_d1.py current        # 查看 D1 当前版本
 
-# 新建迁移（改完 schema.py 后）
+# 新建迁移（改完 app/db/tables.py 后）
 cd backend && uv run alembic revision --autogenerate -m "描述"
 
 # 生成播客

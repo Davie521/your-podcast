@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app import d1_database
-from app.models import TaskStatus
+from app.db import queries
+from app.schemas import TaskStatus
 
 
 # All generate endpoint tests patch _run_in_background to avoid real D1 calls
@@ -41,7 +41,7 @@ async def test_generate_creates_task_in_db(authenticated_client, db, test_user):
     assert resp.status_code == 202
     task_id = resp.json()["task_id"]
 
-    task = await d1_database.get_task_by_id(db, task_id)
+    task = await queries.get_task_by_id(db, task_id)
     assert task is not None
     assert task["user_id"] == test_user["id"]
     assert task["status"] == TaskStatus.pending
@@ -51,7 +51,7 @@ async def test_generate_creates_task_in_db(authenticated_client, db, test_user):
 @pytest.mark.anyio
 async def test_generate_one_active_task_per_user(authenticated_client, db, test_user):
     # Create an active task
-    await d1_database.create_task(
+    await queries.create_task(
         db, user_id=test_user["id"], status=TaskStatus.processing, progress="running"
     )
 
@@ -63,7 +63,7 @@ async def test_generate_one_active_task_per_user(authenticated_client, db, test_
 @pytest.mark.anyio
 async def test_generate_allows_after_completed_task(authenticated_client, db, test_user):
     # Completed task should not block
-    await d1_database.create_task(
+    await queries.create_task(
         db, user_id=test_user["id"], status=TaskStatus.completed, progress="done"
     )
 
@@ -74,7 +74,7 @@ async def test_generate_allows_after_completed_task(authenticated_client, db, te
 
 @pytest.mark.anyio
 async def test_generate_allows_after_failed_task(authenticated_client, db, test_user):
-    await d1_database.create_task(
+    await queries.create_task(
         db, user_id=test_user["id"], status=TaskStatus.failed, progress="error"
     )
 
@@ -108,7 +108,7 @@ async def test_generate_custom_date(authenticated_client):
 
 @pytest.mark.anyio
 async def test_get_task_unauthenticated(client, db, test_user):
-    task = await d1_database.create_task(
+    task = await queries.create_task(
         db, user_id=test_user["id"], status=TaskStatus.pending, progress="queued"
     )
 
@@ -118,7 +118,7 @@ async def test_get_task_unauthenticated(client, db, test_user):
 
 @pytest.mark.anyio
 async def test_get_task_success(authenticated_client, db, test_user):
-    task = await d1_database.create_task(
+    task = await queries.create_task(
         db, user_id=test_user["id"], status=TaskStatus.processing, progress="fetching_rss"
     )
 
@@ -134,10 +134,10 @@ async def test_get_task_success(authenticated_client, db, test_user):
 @pytest.mark.anyio
 async def test_get_task_completed_with_episode(authenticated_client, db, test_user):
     ep_id = str(uuid.uuid4())
-    task = await d1_database.create_task(
+    task = await queries.create_task(
         db, user_id=test_user["id"], status=TaskStatus.completed, progress="done"
     )
-    await d1_database.update_task(db, task["id"], episode_id=ep_id)
+    await queries.update_task(db, task["id"], episode_id=ep_id)
 
     resp = await authenticated_client.get(f"/api/tasks/{task['id']}")
     data = resp.json()
@@ -154,7 +154,7 @@ async def test_get_task_not_found(authenticated_client):
 @pytest.mark.anyio
 async def test_get_task_wrong_owner(authenticated_client, db):
     # Create task owned by a different user
-    other_user = await d1_database.upsert_user(
+    other_user = await queries.upsert_user(
         db,
         email="other@example.com",
         name="Other",
@@ -163,7 +163,7 @@ async def test_get_task_wrong_owner(authenticated_client, db):
         provider_id="99999",
     )
 
-    task = await d1_database.create_task(
+    task = await queries.create_task(
         db, user_id=other_user["id"], status=TaskStatus.pending, progress="queued"
     )
 

@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app import d1_database
 from app.auth import get_current_user, get_optional_user
-from app.database import get_db
-from app.types import DatabaseClient
+from app.db import DatabaseClient, get_db
+from app.db import queries
 from app.schemas import (
     EpisodeDetail,
     EpisodeListItem,
@@ -35,7 +34,7 @@ async def list_public_episodes(
     offset: int = Query(default=0, ge=0),
     db: DatabaseClient = Depends(get_db),
 ):
-    rows, total = await d1_database.list_public_episodes(db, limit=limit, offset=offset)
+    rows, total = await queries.list_public_episodes(db, limit=limit, offset=offset)
     episodes = [_row_to_list_item(r) for r in rows]
     return EpisodeListResponse(episodes=episodes, total=total, limit=limit, offset=offset)
 
@@ -48,7 +47,7 @@ async def list_my_episodes(
     current_user: dict = Depends(get_current_user),
     db: DatabaseClient = Depends(get_db),
 ):
-    rows, total = await d1_database.list_user_episodes(
+    rows, total = await queries.list_user_episodes(
         db, current_user["id"], limit=limit, offset=offset
     )
     episodes = [_row_to_list_item(r) for r in rows]
@@ -61,7 +60,7 @@ async def get_episode(
     current_user: dict | None = Depends(get_optional_user),
     db: DatabaseClient = Depends(get_db),
 ):
-    ep = await d1_database.get_episode_detail(db, episode_id)
+    ep = await queries.get_episode_detail(db, episode_id)
     if not ep:
         raise HTTPException(status_code=404, detail="Episode not found")
 

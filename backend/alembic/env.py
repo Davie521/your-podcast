@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.schema import metadata
+from app.db.tables import metadata
 
 config = context.config
 if config.config_file_name is not None:

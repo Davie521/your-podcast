@@ -5,8 +5,8 @@ from httpx import ASGITransport, AsyncClient
 
 from app.auth import create_session_cookie, SESSION_COOKIE_NAME
 from app.config import Settings
-from app.database import get_db
-from app.schema import metadata
+from app.db import get_db
+from app.db.tables import metadata
 from app.services.d1 import D1Client
 
 
@@ -86,9 +86,9 @@ async def client(db):
 
 @pytest.fixture()
 async def test_user(db):
-    from app import d1_database
+    from app.db import queries
 
-    user = await d1_database.upsert_user(
+    user = await queries.upsert_user(
         db,
         email="test@example.com",
         name="Test User",
@@ -96,7 +96,7 @@ async def test_user(db):
         provider="google",
         provider_id="12345",
     )
-    await d1_database.update_user_interests(db, user["id"], ["AI", "Python"])
+    await queries.update_user_interests(db, user["id"], ["AI", "Python"])
     user["interests"] = ["AI", "Python"]
     return user
 

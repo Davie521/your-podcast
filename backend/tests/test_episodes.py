@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app import d1_database
+from app.db import queries
 
 
 async def _make_episode(
@@ -149,7 +149,7 @@ async def test_private_episode_404_for_non_owner(client, db, test_user, auth_coo
     ep = await _make_episode(db, test_user, is_public=False)
 
     # Create a different user and authenticate as them
-    other_user = await d1_database.upsert_user(
+    other_user = await queries.upsert_user(
         db,
         email="other@example.com",
         name="Other",

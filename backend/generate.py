@@ -14,9 +14,9 @@ import logging
 import sys
 from datetime import datetime, timezone
 
-from app import d1_database
 from app.config import get_settings
-from app.database import create_db_client
+from app.db import create_db_client
+from app.db import queries
 from app.services.pipeline import DEFAULT_FEEDS, run_pipeline
 
 logging.basicConfig(
@@ -38,11 +38,11 @@ def parse_args() -> argparse.Namespace:
 async def get_or_create_system_user(db) -> dict:
     """Get or create a system user for CLI-generated episodes."""
     system_email = "system@your-podcast.local"
-    user = await d1_database.get_user_by_email(db, system_email)
+    user = await queries.get_user_by_email(db, system_email)
     if user:
         return user
 
-    user = await d1_database.upsert_user(
+    user = await queries.upsert_user(
         db,
         email=system_email,
         name="System",
@@ -51,7 +51,7 @@ async def get_or_create_system_user(db) -> dict:
         provider_id="system",
     )
     # Set default interests
-    await d1_database.update_user_interests(
+    await queries.update_user_interests(
         db, user["id"], ["technology", "internet", "AI", "programming"]
     )
     user["interests"] = ["technology", "internet", "AI", "programming"]
@@ -78,7 +78,7 @@ async def async_main() -> None:
 
     # Resolve user
     if args.user_id:
-        user = await d1_database.get_user_by_id(db, args.user_id)
+        user = await queries.get_user_by_id(db, args.user_id)
         if not user:
             logger.error("User %s not found", args.user_id)
             sys.exit(1)
@@ -86,7 +86,7 @@ async def async_main() -> None:
         user = await get_or_create_system_user(db)
 
     # Create task
-    task = await d1_database.create_task(
+    task = await queries.create_task(
         db, user_id=user["id"], status="pending", progress="starting"
     )
     logger.info("Task %s created for user %s", task["id"], user["name"])

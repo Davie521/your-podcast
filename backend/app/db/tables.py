@@ -1,7 +1,7 @@
 """Database schema — SQLAlchemy Core table definitions.
 
 Used by Alembic for migrations and by LocalSQLiteClient for dev DB init.
-Query layer (d1_database.py) still uses hand-written SQL + dicts.
+Query layer (db/queries.py) still uses hand-written SQL + dicts.
 """
 
 from sqlalchemy import (

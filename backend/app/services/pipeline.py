@@ -7,11 +7,11 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from app import d1_database
 from app.config import Settings
-from app.models import TaskStatus
+from app.db import DatabaseClient
+from app.db import queries
+from app.schemas import TaskStatus
 from app.services import audio, cover, gemini, podcast, rss, storage, tts
-from app.services.d1 import D1Client
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +23,12 @@ DEFAULT_FEEDS = [
 
 
 async def _update_task(
-    db: D1Client,
+    db: DatabaseClient,
     task_id: str,
     progress: str,
     status: str = TaskStatus.processing,
 ) -> None:
-    await d1_database.update_task(db, task_id, status=status, progress=progress)
+    await queries.update_task(db, task_id, status=status, progress=progress)
 
 
 async def run_pipeline(
@@ -37,7 +37,7 @@ async def run_pipeline(
     feed_urls: list[str],
     episode_date: str,
     task_id: str,
-    db: D1Client,
+    db: DatabaseClient,
     settings: Settings,
     dry_run: bool = False,
 ) -> dict | None:
@@ -70,7 +70,7 @@ async def _run_pipeline_inner(
     feed_urls: list[str],
     episode_date: str,
     task_id: str,
-    db: D1Client,
+    db: DatabaseClient,
     settings: Settings,
     dry_run: bool,
 ) -> dict | None:
@@ -153,7 +153,7 @@ async def _run_pipeline_inner(
         "published_at": now,
     }
 
-    await d1_database.save_pipeline_result(
+    await queries.save_pipeline_result(
         db,
         task_id=task_id,
         episode=episode,
