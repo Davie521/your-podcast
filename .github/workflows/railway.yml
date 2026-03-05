@@ -36,6 +36,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Install Railway CLI
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: npm i -g @railway/cli
 
       # Production deploy on push to main or manual trigger
