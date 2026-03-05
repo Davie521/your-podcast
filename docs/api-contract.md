@@ -241,9 +241,11 @@ Trigger podcast generation. Requires auth. The episode is owned by the current u
 
 | Field      | Type     | Notes                                                        |
 | ---------- | -------- | ------------------------------------------------------------ |
-| `feeds`    | string[] | Override RSS feed URLs (ignored if `keywords` is set)        |
-| `keywords` | string[] | Keyword-driven mode: fetch from curated RSS sources per keyword |
-| `date`     | string   | Episode date tag (YYYY-MM-DD, defaults to today)             |
+| `feeds`        | string[] | Override RSS feed URLs (ignored if `keywords` is set)        |
+| `keywords`     | string[] | Keyword-driven mode: fetch from curated RSS sources per keyword |
+| `date`         | string   | Episode date tag (YYYY-MM-DD, defaults to today)             |
+| `voice_male`   | string   | Override male voice name (default: from env)                 |
+| `voice_female`  | string   | Override female voice name (default: from env)               |
 
 When `keywords` is provided, the pipeline fetches articles from keyword-mapped RSS sources
 (configured in `config/rss_sources.json`) and uses Gemini to select the most relevant articles.

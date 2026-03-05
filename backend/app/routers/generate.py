@@ -22,6 +22,8 @@ class GenerateRequest(BaseModel):
     feeds: list[str] | None = None
     keywords: list[str] | None = None
     date: str | None = None
+    voice_male: str | None = None
+    voice_female: str | None = None
 
 
 class GenerateResponse(BaseModel):
@@ -45,9 +47,14 @@ async def _run_in_background(
     episode_date: str,
     settings: Settings,
     keywords: list[str] | None = None,
+    voice_male: str | None = None,
+    voice_female: str | None = None,
 ) -> None:
     """Background task wrapper — creates its own DB client."""
     from app.services.pipeline import run_pipeline
+
+    if voice_male or voice_female:
+        settings = _apply_voice_overrides(settings, voice_male, voice_female)
 
     db = create_db_client(settings)
     try:
@@ -67,6 +74,28 @@ async def _run_in_background(
         )
     finally:
         await db.aclose()
+
+
+def _apply_voice_overrides(
+    settings: Settings,
+    voice_male: str | None,
+    voice_female: str | None,
+) -> Settings:
+    """Return a copy of settings with voice names overridden."""
+    overrides: dict = {}
+    if settings.tts_provider == "inworld":
+        if voice_male:
+            overrides["inworld_tts_voice_male"] = voice_male
+        if voice_female:
+            overrides["inworld_tts_voice_female"] = voice_female
+    elif settings.tts_provider == "google":
+        if voice_male:
+            overrides["google_tts_voice_male"] = voice_male
+        if voice_female:
+            overrides["google_tts_voice_female"] = voice_female
+    if not overrides:
+        return settings
+    return settings.model_copy(update=overrides)
 
 
 @router.post("/generate", response_model=GenerateResponse, status_code=202)
@@ -98,6 +127,8 @@ async def generate_episode(
         episode_date,
         settings,
         body.keywords,
+        body.voice_male,
+        body.voice_female,
     )
 
     return GenerateResponse(
