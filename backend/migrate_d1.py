@@ -48,6 +48,12 @@ def _capture_offline_sql(target_rev: str, starting_rev: str | None = None) -> st
     return buf.getvalue()
 
 
+def _strip_returning(sql: str) -> str:
+    """Remove RETURNING clauses that D1 doesn't support."""
+    import re
+    return re.sub(r"\s+RETURNING\b.+", "", sql, flags=re.IGNORECASE | re.DOTALL)
+
+
 def _split_sql_statements(sql: str) -> list[str]:
     """Split Alembic-generated SQL into executable statements safely."""
     statements: list[str] = []
@@ -62,7 +68,7 @@ def _split_sql_statements(sql: str) -> list[str]:
         if sqlite3.complete_statement(candidate):
             statement = candidate.rstrip().rstrip(";").strip()
             if statement:
-                statements.append(statement)
+                statements.append(_strip_returning(statement))
             current.clear()
 
     if current:
@@ -77,8 +83,8 @@ async def _get_d1_client():
 
 
 async def _run_upgrade(target: str, dry_run: bool = False) -> None:
-    # First check current revision on D1
-    current_rev = await _get_current_rev()
+    # Dry-run doesn't need D1 credentials — generate all SQL from scratch
+    current_rev = None if dry_run else await _get_current_rev()
 
     sql = _capture_offline_sql(target, starting_rev=current_rev)
     if not sql.strip():
