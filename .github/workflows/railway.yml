@@ -23,6 +23,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: astral-sh/setup-uv@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: uv sync --frozen --no-dev
+        working-directory: backend
+
+      - name: Apply D1 migrations
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: uv run python migrate_d1.py upgrade head
+        working-directory: backend
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 

@@ -4,7 +4,7 @@ from pydantic import BaseModel, field_validator
 from app import d1_database
 from app.auth import get_current_user
 from app.database import get_db
-from app.services.d1 import D1Client
+from app.types import DatabaseClient
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
@@ -40,7 +40,7 @@ class InterestsBody(BaseModel):
 async def set_interests(
     body: InterestsBody,
     current_user: dict = Depends(get_current_user),
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
 ):
     await d1_database.update_user_interests(db, current_user["id"], body.interests)
     return {"interests": body.interests}

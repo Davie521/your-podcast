@@ -1,64 +1,88 @@
-"""Database schema definitions shared by init_d1.py and LocalSQLiteClient."""
+"""Database schema — SQLAlchemy Core table definitions.
 
-SCHEMA_STATEMENTS = [
-    """CREATE TABLE IF NOT EXISTS user (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        avatar_url TEXT NOT NULL DEFAULT '',
-        provider TEXT NOT NULL,
-        provider_id TEXT NOT NULL,
-        interests TEXT NOT NULL DEFAULT '[]',
-        created_at TEXT NOT NULL
-    )""",
-    "CREATE INDEX IF NOT EXISTS idx_user_email ON user(email)",
-    """CREATE TABLE IF NOT EXISTS episode (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        cover_url TEXT NOT NULL DEFAULT '',
-        audio_url TEXT NOT NULL DEFAULT '',
-        duration INTEGER NOT NULL DEFAULT 0,
-        is_public INTEGER NOT NULL DEFAULT 1,
-        creator_id TEXT NOT NULL REFERENCES user(id),
-        published_at TEXT NOT NULL
-    )""",
-    "CREATE INDEX IF NOT EXISTS idx_episode_creator ON episode(creator_id)",
-    "CREATE INDEX IF NOT EXISTS idx_episode_public ON episode(is_public, published_at)",
-    """CREATE TABLE IF NOT EXISTS source (
-        id TEXT PRIMARY KEY,
-        episode_id TEXT NOT NULL REFERENCES episode(id),
-        title TEXT NOT NULL,
-        url TEXT NOT NULL,
-        source TEXT NOT NULL
-    )""",
-    "CREATE INDEX IF NOT EXISTS idx_source_episode ON source(episode_id)",
-    """CREATE TABLE IF NOT EXISTS transcript_line (
-        id TEXT PRIMARY KEY,
-        episode_id TEXT NOT NULL REFERENCES episode(id),
-        line_order INTEGER NOT NULL,
-        speaker TEXT NOT NULL,
-        text TEXT NOT NULL
-    )""",
-    "CREATE INDEX IF NOT EXISTS idx_transcript_episode ON transcript_line(episode_id)",
-    """CREATE TABLE IF NOT EXISTS task (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL REFERENCES user(id),
-        status TEXT NOT NULL DEFAULT 'pending',
-        progress TEXT NOT NULL DEFAULT '',
-        episode_id TEXT REFERENCES episode(id),
-        created_at TEXT NOT NULL
-    )""",
-    "CREATE INDEX IF NOT EXISTS idx_task_user ON task(user_id)",
-    """CREATE UNIQUE INDEX IF NOT EXISTS idx_task_one_active_per_user
-       ON task(user_id)
-       WHERE status IN ('pending', 'processing')""",
-]
+Used by Alembic for migrations and by LocalSQLiteClient for dev DB init.
+Query layer (d1_database.py) still uses hand-written SQL + dicts.
+"""
 
-DROP_STATEMENTS = [
-    "DROP TABLE IF EXISTS transcript_line",
-    "DROP TABLE IF EXISTS source",
-    "DROP TABLE IF EXISTS task",
-    "DROP TABLE IF EXISTS episode",
-    "DROP TABLE IF EXISTS user",
-]
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    Table,
+    Text,
+    text,
+)
+
+metadata = MetaData()
+
+user = Table(
+    "user",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("name", Text, nullable=False),
+    Column("email", Text, nullable=False, unique=True),
+    Column("avatar_url", Text, nullable=False, server_default=""),
+    Column("provider", Text, nullable=False),
+    Column("provider_id", Text, nullable=False),
+    Column("interests", Text, nullable=False, server_default="[]"),
+    Column("created_at", Text, nullable=False),
+    Index("idx_user_email", "email"),
+)
+
+episode = Table(
+    "episode",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("title", Text, nullable=False),
+    Column("description", Text, nullable=False, server_default=""),
+    Column("cover_url", Text, nullable=False, server_default=""),
+    Column("audio_url", Text, nullable=False, server_default=""),
+    Column("duration", Integer, nullable=False, server_default="0"),
+    Column("is_public", Integer, nullable=False, server_default="1"),
+    Column("creator_id", Text, ForeignKey("user.id"), nullable=False),
+    Column("published_at", Text, nullable=False),
+    Index("idx_episode_creator", "creator_id"),
+    Index("idx_episode_public", "is_public", "published_at"),
+)
+
+source = Table(
+    "source",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("episode_id", Text, ForeignKey("episode.id"), nullable=False),
+    Column("title", Text, nullable=False),
+    Column("url", Text, nullable=False),
+    Column("source", Text, nullable=False),
+    Index("idx_source_episode", "episode_id"),
+)
+
+transcript_line = Table(
+    "transcript_line",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("episode_id", Text, ForeignKey("episode.id"), nullable=False),
+    Column("line_order", Integer, nullable=False),
+    Column("speaker", Text, nullable=False),
+    Column("text", Text, nullable=False),
+    Index("idx_transcript_episode", "episode_id"),
+)
+
+task = Table(
+    "task",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("user_id", Text, ForeignKey("user.id"), nullable=False),
+    Column("status", Text, nullable=False, server_default="pending"),
+    Column("progress", Text, nullable=False, server_default=""),
+    Column("episode_id", Text, ForeignKey("episode.id"), nullable=True),
+    Column("created_at", Text, nullable=False),
+    Index("idx_task_user", "user_id"),
+    Index(
+        "idx_task_one_active_per_user",
+        "user_id",
+        unique=True,
+        sqlite_where=text("status IN ('pending', 'processing')"),
+    ),
+)

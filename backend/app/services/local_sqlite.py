@@ -4,8 +4,9 @@ import logging
 import os
 
 import aiosqlite
+from sqlalchemy import create_engine
 
-from app.schema import SCHEMA_STATEMENTS
+from app.schema import metadata
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,9 @@ class LocalSQLiteClient:
             await self._conn.execute("PRAGMA foreign_keys=ON")
             if need_init:
                 logger.info("Initializing local SQLite database at %s", self._db_path)
-                for sql in SCHEMA_STATEMENTS:
-                    await self._conn.execute(sql)
-                await self._conn.commit()
+                engine = create_engine(f"sqlite:///{self._db_path}")
+                metadata.create_all(engine)
+                engine.dispose()
                 logger.info("Local database schema created.")
         return self._conn
 

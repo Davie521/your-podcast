@@ -6,11 +6,10 @@ from pydantic import BaseModel
 from app import d1_database
 from app.auth import get_current_user
 from app.config import Settings, get_settings
-from app.database import get_db
+from app.database import create_db_client, get_db
 from app.models import TaskStatus
-from app.database import create_db_client
 from app.schemas import TaskResponse
-from app.services.d1 import D1Client
+from app.types import DatabaseClient
 
 DEFAULT_FEEDS = [
     "https://feeds.arstechnica.com/arstechnica/index",
@@ -74,7 +73,7 @@ async def generate_episode(
     body: GenerateRequest = GenerateRequest(),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user: dict = Depends(get_current_user),
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     feed_urls = _resolve_feeds(body.feeds, settings)

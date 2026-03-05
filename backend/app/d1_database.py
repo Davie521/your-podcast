@@ -8,7 +8,7 @@ import json
 import uuid
 from datetime import datetime, timezone
 
-from app.services.d1 import D1Client
+from app.types import DatabaseClient
 
 
 def _utcnow_iso() -> str:
@@ -22,7 +22,7 @@ def _new_id() -> str:
 # ── User ─────────────────────────────────────────────────────
 
 
-async def get_user_by_id(db: D1Client, user_id: str) -> dict | None:
+async def get_user_by_id(db: DatabaseClient, user_id: str) -> dict | None:
     rows = await db.execute("SELECT * FROM user WHERE id = ?", [user_id])
     if not rows:
         return None
@@ -31,7 +31,7 @@ async def get_user_by_id(db: D1Client, user_id: str) -> dict | None:
     return user
 
 
-async def get_user_by_email(db: D1Client, email: str) -> dict | None:
+async def get_user_by_email(db: DatabaseClient, email: str) -> dict | None:
     rows = await db.execute("SELECT * FROM user WHERE email = ?", [email])
     if not rows:
         return None
@@ -41,7 +41,7 @@ async def get_user_by_email(db: D1Client, email: str) -> dict | None:
 
 
 async def upsert_user(
-    db: D1Client,
+    db: DatabaseClient,
     *,
     email: str,
     name: str,
@@ -78,7 +78,7 @@ async def upsert_user(
     }
 
 
-async def update_user_interests(db: D1Client, user_id: str, interests: list[str]) -> None:
+async def update_user_interests(db: DatabaseClient, user_id: str, interests: list[str]) -> None:
     await db.execute(
         "UPDATE user SET interests = ? WHERE id = ?",
         [json.dumps(interests), user_id],
@@ -89,7 +89,7 @@ async def update_user_interests(db: D1Client, user_id: str, interests: list[str]
 
 
 async def list_public_episodes(
-    db: D1Client, *, limit: int = 20, offset: int = 0
+    db: DatabaseClient, *, limit: int = 20, offset: int = 0
 ) -> tuple[list[dict], int]:
     count_rows = await db.execute(
         "SELECT COUNT(*) AS cnt FROM episode WHERE is_public = 1"
@@ -109,7 +109,7 @@ async def list_public_episodes(
 
 
 async def list_user_episodes(
-    db: D1Client, user_id: str, *, limit: int = 20, offset: int = 0
+    db: DatabaseClient, user_id: str, *, limit: int = 20, offset: int = 0
 ) -> tuple[list[dict], int]:
     count_rows = await db.execute(
         "SELECT COUNT(*) AS cnt FROM episode WHERE creator_id = ?", [user_id]
@@ -128,7 +128,7 @@ async def list_user_episodes(
     return rows, total
 
 
-async def get_episode_detail(db: D1Client, episode_id: str) -> dict | None:
+async def get_episode_detail(db: DatabaseClient, episode_id: str) -> dict | None:
     rows = await db.execute(
         """SELECT e.*, u.name AS creator_name
            FROM episode e
@@ -150,7 +150,7 @@ async def get_episode_detail(db: D1Client, episode_id: str) -> dict | None:
 
 
 async def count_user_episodes(
-    db: D1Client, user_id: str, *, public_only: bool = False
+    db: DatabaseClient, user_id: str, *, public_only: bool = False
 ) -> int:
     if public_only:
         rows = await db.execute(
@@ -168,7 +168,7 @@ async def count_user_episodes(
 
 
 async def create_task(
-    db: D1Client, *, user_id: str, status: str = "pending", progress: str = ""
+    db: DatabaseClient, *, user_id: str, status: str = "pending", progress: str = ""
 ) -> dict:
     task_id = _new_id()
     now = _utcnow_iso()
@@ -192,13 +192,13 @@ async def create_task(
     }
 
 
-async def get_task_by_id(db: D1Client, task_id: str) -> dict | None:
+async def get_task_by_id(db: DatabaseClient, task_id: str) -> dict | None:
     rows = await db.execute("SELECT * FROM task WHERE id = ?", [task_id])
     return rows[0] if rows else None
 
 
 async def update_task(
-    db: D1Client,
+    db: DatabaseClient,
     task_id: str,
     *,
     status: str | None = None,
@@ -222,7 +222,7 @@ async def update_task(
     await db.execute(f"UPDATE task SET {', '.join(parts)} WHERE id = ?", params)
 
 
-async def get_active_task(db: D1Client, user_id: str) -> dict | None:
+async def get_active_task(db: DatabaseClient, user_id: str) -> dict | None:
     rows = await db.execute(
         "SELECT * FROM task WHERE user_id = ? AND status IN ('pending', 'processing')",
         [user_id],
@@ -234,7 +234,7 @@ async def get_active_task(db: D1Client, user_id: str) -> dict | None:
 
 
 async def save_pipeline_result(
-    db: D1Client,
+    db: DatabaseClient,
     *,
     task_id: str,
     episode: dict,

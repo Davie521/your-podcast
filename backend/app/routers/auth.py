@@ -12,7 +12,7 @@ from app.auth import (
 )
 from app.config import Settings, get_settings
 from app.database import get_db
-from app.services.d1 import D1Client
+from app.types import DatabaseClient
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -66,7 +66,7 @@ async def google_login(request: Request, settings: Settings = Depends(get_settin
 @router.get("/google/callback")
 async def google_callback(
     request: Request,
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     _register_oauth(settings)
@@ -107,7 +107,7 @@ async def github_login(request: Request, settings: Settings = Depends(get_settin
 @router.get("/github/callback")
 async def github_callback(
     request: Request,
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     _register_oauth(settings)
@@ -160,7 +160,7 @@ async def github_callback(
 @router.get("/me")
 async def me(
     current_user: dict = Depends(get_current_user),
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
 ):
     public_count = await d1_database.count_user_episodes(db, current_user["id"], public_only=True)
     total_count = await d1_database.count_user_episodes(db, current_user["id"])
@@ -183,7 +183,7 @@ async def me(
 @router.post("/dev-login")
 async def dev_login(
     response: Response,
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     """Log in as the seed user without OAuth. Only available in development."""
