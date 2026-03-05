@@ -28,7 +28,7 @@ export type AuthAction =
   | { readonly type: 'CLEAR' };
 
 export interface AuthDispatch {
-  login: (provider: 'google' | 'github') => void;
+  login: (provider: 'google') => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }

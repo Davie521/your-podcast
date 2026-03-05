@@ -1,4 +1,3 @@
-import httpx
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
@@ -27,15 +26,6 @@ def _register_oauth(settings: Settings) -> None:
             client_secret=settings.google_client_secret,
             server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
             client_kwargs={"scope": "openid email profile"},
-        )
-    if "github" not in oauth._clients:
-        oauth.register(
-            name="github",
-            client_id=settings.github_client_id,
-            client_secret=settings.github_client_secret,
-            authorize_url="https://github.com/login/oauth/authorize",
-            access_token_url="https://github.com/login/oauth/access_token",
-            client_kwargs={"scope": "user:email"},
         )
 
 
@@ -86,66 +76,6 @@ async def google_callback(
         avatar_url=userinfo.get("picture", ""),
         provider="google",
         provider_id=str(sub),
-    )
-
-    response = RedirectResponse(url=settings.frontend_url)
-    _set_session_cookie(response, user, settings)
-    return response
-
-
-# ── GitHub OAuth ──────────────────────────────────────────────
-
-
-@router.get("/github")
-async def github_login(request: Request, settings: Settings = Depends(get_settings)):
-    _register_oauth(settings)
-    redirect_uri = f"{settings.frontend_url}/api/auth/github/callback"
-    return await oauth.github.authorize_redirect(request, redirect_uri)
-
-
-@router.get("/github/callback")
-async def github_callback(
-    request: Request,
-    db: DatabaseClient = Depends(get_db),
-    settings: Settings = Depends(get_settings),
-):
-    _register_oauth(settings)
-    token = await oauth.github.authorize_access_token(request)
-    access_token = token["access_token"]
-
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            "https://api.github.com/user",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        resp.raise_for_status()
-        gh_user = resp.json()
-
-        # GitHub may not expose email publicly — fetch from emails endpoint
-        email = gh_user.get("email")
-        if not email:
-            resp = await client.get(
-                "https://api.github.com/user/emails",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            resp.raise_for_status()
-            emails = resp.json()
-            verified = [e for e in emails if e.get("verified")]
-            if not verified:
-                raise HTTPException(status_code=400, detail="No verified email found on GitHub account")
-            primary = next((e for e in verified if e.get("primary")), verified[0])
-            email = primary["email"]
-
-    if not gh_user.get("id"):
-        raise HTTPException(status_code=400, detail="Missing user ID from GitHub")
-
-    user = await queries.upsert_user(
-        db,
-        email=email,
-        name=gh_user.get("name") or gh_user.get("login", ""),
-        avatar_url=gh_user.get("avatar_url", ""),
-        provider="github",
-        provider_id=str(gh_user["id"]),
     )
 
     response = RedirectResponse(url=settings.frontend_url)

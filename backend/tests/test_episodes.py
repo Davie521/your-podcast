@@ -222,7 +222,7 @@ async def test_private_episode_404_for_non_owner(client, db, test_user, auth_coo
         email="other@example.com",
         name="Other",
         avatar_url="",
-        provider="github",
+        provider="google",
         provider_id="99999",
     )
 
