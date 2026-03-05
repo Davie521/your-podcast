@@ -58,7 +58,7 @@ def _set_session_cookie(response: Response, user: dict, settings: Settings) -> N
 @router.get("/google")
 async def google_login(request: Request, settings: Settings = Depends(get_settings)):
     _register_oauth(settings)
-    redirect_uri = str(request.url_for("google_callback"))
+    redirect_uri = f"{settings.frontend_url}/api/auth/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -99,7 +99,7 @@ async def google_callback(
 @router.get("/github")
 async def github_login(request: Request, settings: Settings = Depends(get_settings)):
     _register_oauth(settings)
-    redirect_uri = str(request.url_for("github_callback"))
+    redirect_uri = f"{settings.frontend_url}/api/auth/github/callback"
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
 
