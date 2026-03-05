@@ -36,6 +36,22 @@ class D1Client:
         """Close the underlying HTTP client."""
         await self._client.aclose()
 
+    def _check_response(self, resp: httpx.Response, *, context: str) -> None:
+        """Raise with D1 error details on non-2xx responses."""
+        if resp.is_success:
+            return
+        try:
+            body = resp.json()
+            errors = body.get("errors", [])
+            detail = "; ".join(e.get("message", str(e)) for e in errors) if errors else resp.text
+        except Exception:
+            detail = resp.text
+        raise httpx.HTTPStatusError(
+            f"D1 {context}: {resp.status_code} — {detail}",
+            request=resp.request,
+            response=resp,
+        )
+
     async def execute(
         self, sql: str, params: list | None = None
     ) -> list[dict]:
@@ -47,7 +63,7 @@ class D1Client:
         resp = await self._client.post(
             self._url, json=body, headers=self._headers
         )
-        resp.raise_for_status()
+        self._check_response(resp, context="execute")
         data = resp.json()
 
         if not data.get("success"):
@@ -82,7 +98,7 @@ class D1Client:
                 headers=self._headers,
                 timeout=60.0,
             )
-            resp.raise_for_status()
+            self._check_response(resp, context="batch")
             data = resp.json()
 
             if not data.get("success"):
@@ -105,7 +121,7 @@ class D1Client:
             resp = await self._client.post(
                 self._url, json=body, headers=self._headers
             )
-            resp.raise_for_status()
+            self._check_response(resp, context=f"batch statement: {stmt['sql'][:80]}")
             data = resp.json()
 
             if not data.get("success"):
