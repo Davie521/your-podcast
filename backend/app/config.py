@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # Google Gemini
     gemini_api_key: str = ""
 
+    # Google Vertex AI (for image generation)
+    vertex_project_id: str = ""
+    vertex_location: str = "us-central1"
+
     # TTS provider: "google" or "inworld"
     tts_provider: str = "inworld"
 

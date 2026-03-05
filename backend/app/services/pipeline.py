@@ -3,7 +3,9 @@
 Each step updates the Task record so the frontend can poll progress.
 """
 
+import json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 
@@ -43,8 +45,9 @@ async def run_pipeline(
 ) -> dict | None:
     """Execute the full podcast generation pipeline.
 
-    Steps: fetch RSS → filter with Gemini → generate script via Podcastfy
-    → TTS synthesis → merge audio → cover image → upload to R2 → save to DB.
+    Steps: fetch RSS -> filter with Gemini -> generate script via Podcastfy
+    -> TTS synthesis -> merge audio -> extract keywords -> generate title
+    -> generate cover -> upload to R2 -> save to DB.
 
     Updates task.progress at each step for frontend polling.
     """
@@ -112,17 +115,41 @@ async def _run_pipeline_inner(
     await _update_task(db, task_id, "merging_audio")
     logger.info("Merging audio files...")
     mp3_path, duration = await audio.merge_audio(audio_files)
-    logger.info("Merged → %s (%ds)", mp3_path, duration)
+    logger.info("Merged -> %s (%ds)", mp3_path, duration)
 
-    # Step 6: Cover image
-    try:
-        dt = datetime.strptime(episode_date, "%Y-%m-%d")
-        display_date = f"{dt.strftime('%b')} {dt.day}"
-    except ValueError:
-        logger.warning("Invalid episode_date '%s', falling back to raw value", episode_date)
-        display_date = episode_date
-    title = f"Your Podcast — {display_date}"
-    cover_url = cover.generate_cover_url(title)
+    # Step 5.5: Extract keywords from transcript
+    keywords = await gemini.generate_keywords(script_lines, settings.gemini_api_key)
+    logger.info("Extracted %d keywords", len(keywords))
+
+    # Step 5.6: Generate AI title from transcript
+    ai_title = await gemini.generate_title(script_lines, settings.gemini_api_key)
+    if ai_title:
+        title = ai_title
+    else:
+        try:
+            dt = datetime.strptime(episode_date, "%Y-%m-%d")
+            display_date = f"{dt.strftime('%b')} {dt.day}"
+        except ValueError:
+            display_date = episode_date
+        title = f"Your Podcast -- {display_date}"
+    logger.info("Episode title: %s", title)
+
+    # Step 6: Generate cover image
+    await _update_task(db, task_id, "generating_cover")
+    logger.info("Generating cover image...")
+    cover_path = await cover.generate_cover(title, keywords, settings)
+
+    if cover_path and not dry_run:
+        cover_key = f"covers/{episode_date}/{uuid.uuid4().hex}.png"
+        cover_url = await storage.upload_to_r2(cover_path, cover_key, settings, content_type="image/png")
+        os.unlink(cover_path)
+        logger.info("Cover uploaded -> %s", cover_url)
+    elif cover_path and dry_run:
+        cover_url = f"file://{cover_path}"
+        logger.info("[DRY RUN] Cover saved locally -> %s", cover_path)
+    else:
+        cover_url = cover.generate_cover_url(title)
+        logger.info("Using placeholder cover -> %s", cover_url)
 
     # Step 7: Upload to R2
     if dry_run:
@@ -133,18 +160,16 @@ async def _run_pipeline_inner(
         logger.info("Uploading to R2...")
         key = f"episodes/{episode_date}/{uuid.uuid4().hex}.mp3"
         audio_url = await storage.upload_to_r2(mp3_path, key, settings)
-        logger.info("Uploaded → %s", audio_url)
+        logger.info("Uploaded -> %s", audio_url)
 
     # Step 8: Save to database
-    await _update_task(db, task_id, "saving")
-    description = ", ".join(a["title"] for a in filtered[:5])
     now = datetime.now(timezone.utc).isoformat()
     episode_id = str(uuid.uuid4())
 
     episode = {
         "id": episode_id,
         "title": title,
-        "description": description,
+        "keywords": json.dumps(keywords),
         "cover_url": cover_url,
         "audio_url": audio_url,
         "duration": duration,
@@ -153,6 +178,7 @@ async def _run_pipeline_inner(
         "published_at": now,
     }
 
+    await _update_task(db, task_id, "saving")
     await queries.save_pipeline_result(
         db,
         task_id=task_id,
@@ -161,5 +187,5 @@ async def _run_pipeline_inner(
         transcript_lines=script_lines,
     )
 
-    logger.info("Episode saved: %s — %s", episode_id, title)
+    logger.info("Episode saved: %s -- %s", episode_id, title)
     return episode

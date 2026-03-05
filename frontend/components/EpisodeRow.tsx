@@ -3,7 +3,7 @@ import { PauseIcon } from '@/components/icons/PauseIcon';
 
 interface EpisodeRowProps {
   readonly title: string;
-  readonly description: string;
+  readonly keywords: readonly string[];
   readonly creatorName: string;
   readonly duration: string;
   readonly coverUrl?: string;
@@ -15,7 +15,7 @@ interface EpisodeRowProps {
   readonly style?: React.CSSProperties;
 }
 
-export function EpisodeRow({ title, description, creatorName, duration, coverUrl, color, isPlaying = false, onPlay, onTap, className, style }: EpisodeRowProps) {
+export function EpisodeRow({ title, keywords, creatorName, duration, coverUrl, color, isPlaying = false, onPlay, onTap, className, style }: EpisodeRowProps) {
   const Icon = isPlaying ? PauseIcon : PlayIcon;
 
   return (
@@ -37,7 +37,7 @@ export function EpisodeRow({ title, description, creatorName, duration, coverUrl
       </div>
       <div className="flex-1 min-w-0 pt-0.5">
         <h3 className="font-serif font-bold text-[16px] leading-5 text-[#111] line-clamp-2">{title}</h3>
-        <p className="font-serif text-[12px] leading-4 text-[rgba(17,17,17,0.7)] mt-1">{description}</p>
+        <p className="font-serif text-[12px] leading-4 text-[rgba(17,17,17,0.7)] mt-1">{keywords.join(' / ')}</p>
         <div className="flex items-center gap-2 mt-1.5">
           <span className="font-inter text-[12px] text-[#666]">{creatorName}</span>
           <span className="text-[#666]">&middot;</span>

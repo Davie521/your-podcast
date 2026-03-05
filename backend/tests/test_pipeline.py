@@ -1,5 +1,6 @@
 """Tests for the pipeline orchestrator (app/services/pipeline.py)."""
 
+import json
 import uuid
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -38,8 +39,8 @@ async def _make_user(db) -> dict:
         provider="system",
         provider_id="system",
     )
-    await queries.update_user_interests(db, user["id"], ["AI", "\u79d1\u6280"])
-    user["interests"] = ["AI", "\u79d1\u6280"]
+    await queries.update_user_interests(db, user["id"], ["AI", "Tech"])
+    user["interests"] = ["AI", "Tech"]
     return user
 
 
@@ -113,8 +114,8 @@ async def test_pipeline_full_success(db):
         {"title": "Tech Update", "url": "https://x.com/2", "summary": "s", "source": "Feed", "published": ""},
     ]
     script_lines = [
-        {"speaker": "\u5c0f\u660e", "text": "\u5927\u5bb6\u597d"},
-        {"speaker": "\u5c0f\u7ea2", "text": "\u6b22\u8fce\u6536\u542c"},
+        {"speaker": "Alex", "text": "Hello everyone"},
+        {"speaker": "Jordan", "text": "Welcome to the show"},
     ]
 
     with (
@@ -123,6 +124,9 @@ async def test_pipeline_full_success(db):
         patch("app.services.pipeline.podcast.generate_script", new_callable=AsyncMock, return_value=script_lines),
         patch("app.services.pipeline.tts.synthesize_lines", new_callable=AsyncMock, return_value=[Path("/tmp/a.wav"), Path("/tmp/b.wav")]),
         patch("app.services.pipeline.audio.merge_audio", new_callable=AsyncMock, return_value=(Path("/tmp/out.mp3"), 120)),
+        patch("app.services.pipeline.gemini.generate_keywords", new_callable=AsyncMock, return_value=["AI", "Tech"]),
+        patch("app.services.pipeline.gemini.generate_title", new_callable=AsyncMock, return_value="AI & Tech: What's Next"),
+        patch("app.services.pipeline.cover.generate_cover", new_callable=AsyncMock, return_value=None),
         patch("app.services.pipeline.storage.upload_to_r2", new_callable=AsyncMock, return_value="https://cdn.example.com/ep.mp3"),
     ):
         result = await run_pipeline(
@@ -135,9 +139,10 @@ async def test_pipeline_full_success(db):
         )
 
     assert result is not None
-    assert result["title"] == "Your Podcast \u2014 2026-03-01"
+    assert result["title"] == "AI & Tech: What's Next"
     assert result["duration"] == 120
     assert result["creator_id"] == user["id"]
+    assert json.loads(result["keywords"]) == ["AI", "Tech"]
 
     # Check task completed
     task = await queries.get_task_by_id(db, task["id"])
@@ -157,7 +162,45 @@ async def test_pipeline_full_success(db):
         [result["id"]],
     )
     assert len(lines) == 2
-    assert lines[0]["speaker"] == "\u5c0f\u660e"
+    assert lines[0]["speaker"] == "Alex"
+
+    # Check keywords saved in DB
+    ep_row = await db.execute("SELECT keywords FROM episode WHERE id = ?", [result["id"]])
+    assert json.loads(ep_row[0]["keywords"]) == ["AI", "Tech"]
+
+
+@pytest.mark.anyio
+async def test_pipeline_title_fallback(db):
+    """Pipeline uses date-based title when AI title generation returns empty."""
+    user = await _make_user(db)
+    task = await _make_task(db, user)
+    settings = _test_settings()
+
+    articles = [{"title": "Test", "url": "https://x.com/1", "summary": "s", "source": "Feed", "published": ""}]
+    script_lines = [{"speaker": "Alex", "text": "Test"}]
+
+    with (
+        patch("app.services.pipeline.rss.fetch_articles", new_callable=AsyncMock, return_value=articles),
+        patch("app.services.pipeline.gemini.filter_articles", new_callable=AsyncMock, return_value=articles),
+        patch("app.services.pipeline.podcast.generate_script", new_callable=AsyncMock, return_value=script_lines),
+        patch("app.services.pipeline.tts.synthesize_lines", new_callable=AsyncMock, return_value=[Path("/tmp/a.wav")]),
+        patch("app.services.pipeline.audio.merge_audio", new_callable=AsyncMock, return_value=(Path("/tmp/out.mp3"), 60)),
+        patch("app.services.pipeline.gemini.generate_keywords", new_callable=AsyncMock, return_value=[]),
+        patch("app.services.pipeline.gemini.generate_title", new_callable=AsyncMock, return_value=""),
+        patch("app.services.pipeline.cover.generate_cover", new_callable=AsyncMock, return_value=None),
+        patch("app.services.pipeline.storage.upload_to_r2", new_callable=AsyncMock, return_value="https://cdn.example.com/ep.mp3"),
+    ):
+        result = await run_pipeline(
+            user=user,
+            feed_urls=["https://example.com/feed"],
+            episode_date="2026-03-01",
+            task_id=task["id"],
+            db=db,
+            settings=settings,
+        )
+
+    assert result is not None
+    assert "Mar 1" in result["title"]
 
 
 @pytest.mark.anyio
@@ -168,7 +211,7 @@ async def test_pipeline_dry_run_skips_upload(db):
     settings = _test_settings()
 
     articles = [{"title": "Test", "url": "https://x.com/1", "summary": "s", "source": "Feed", "published": ""}]
-    script_lines = [{"speaker": "\u5c0f\u660e", "text": "\u6d4b\u8bd5"}]
+    script_lines = [{"speaker": "Alex", "text": "Test"}]
 
     with (
         patch("app.services.pipeline.rss.fetch_articles", new_callable=AsyncMock, return_value=articles),
@@ -176,6 +219,9 @@ async def test_pipeline_dry_run_skips_upload(db):
         patch("app.services.pipeline.podcast.generate_script", new_callable=AsyncMock, return_value=script_lines),
         patch("app.services.pipeline.tts.synthesize_lines", new_callable=AsyncMock, return_value=[Path("/tmp/a.wav")]),
         patch("app.services.pipeline.audio.merge_audio", new_callable=AsyncMock, return_value=(Path("/tmp/out.mp3"), 60)),
+        patch("app.services.pipeline.gemini.generate_keywords", new_callable=AsyncMock, return_value=["AI"]),
+        patch("app.services.pipeline.gemini.generate_title", new_callable=AsyncMock, return_value="Test Title"),
+        patch("app.services.pipeline.cover.generate_cover", new_callable=AsyncMock, return_value=None),
         patch("app.services.pipeline.storage.upload_to_r2", new_callable=AsyncMock) as mock_upload,
     ):
         result = await run_pipeline(

@@ -4,7 +4,7 @@ export const FALLBACK_EPISODES: readonly Episode[] = [
   {
     id: 'ep-1',
     title: 'Rust vs Go in 2026: The Definitive Take',
-    description: 'Rust / Go / Performance',
+    keywords: ['Rust', 'Go', 'Performance'],
     creatorName: '@dev.alex',
     duration: 540,
     color: '#f54900',
@@ -17,7 +17,7 @@ export const FALLBACK_EPISODES: readonly Episode[] = [
   {
     id: 'ep-2',
     title: 'Quantum Computing Explained Simply',
-    description: 'Quantum / Qubits / Google',
+    keywords: ['Quantum', 'Qubits', 'Google'],
     creatorName: '@physics.dan',
     duration: 660,
     color: '#009689',
@@ -30,7 +30,7 @@ export const FALLBACK_EPISODES: readonly Episode[] = [
   {
     id: 'ep-3',
     title: 'Claude Code and the AI Coding Revolution',
-    description: 'AI / Coding / Agents',
+    keywords: ['AI', 'Coding', 'Agents'],
     creatorName: '@techie.sam',
     duration: 840,
     color: '#432dd7',
@@ -43,7 +43,7 @@ export const FALLBACK_EPISODES: readonly Episode[] = [
   {
     id: 'ep-4',
     title: 'Are Podcasts Dying or Evolving?',
-    description: 'Media / Audio / Trends',
+    keywords: ['Media', 'Audio', 'Trends'],
     creatorName: '@media.jan',
     duration: 480,
     color: '#155dfc',
@@ -56,7 +56,7 @@ export const FALLBACK_EPISODES: readonly Episode[] = [
   {
     id: 'ep-5',
     title: 'The Science of Sleep & Productivity',
-    description: 'Sleep / Focus / Deep Work',
+    keywords: ['Sleep', 'Focus', 'Deep Work'],
     creatorName: '@sarah.k',
     duration: 600,
     color: '#ff637e',

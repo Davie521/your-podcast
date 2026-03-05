@@ -84,7 +84,7 @@ export default function ExplorePage() {
                 <EpisodeRow
                   key={ep.id}
                   title={ep.title}
-                  description={ep.description}
+                  keywords={ep.keywords}
                   creatorName={ep.creatorName}
                   duration={formatDuration(ep.duration)}
                   color={ep.color}

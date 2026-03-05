@@ -15,15 +15,15 @@ import pytest
 
 from app.config import Settings
 from app.services.rss import Article, fetch_articles, _parse_feed
-from app.services.gemini import filter_articles
+from app.services.gemini import filter_articles, generate_keywords, generate_title
 from app.services.podcast import _parse_transcript, generate_script, ScriptLine
 from app.services.tts import synthesize_lines
 from app.services.audio import merge_audio, _merge
-from app.services.cover import generate_cover_url
+from app.services.cover import generate_cover_url, generate_cover
 from app.services.storage import upload_to_r2, _upload
 
 
-# ── Helpers ────────────────────────────────────────────────────
+# -- Helpers --
 
 def _make_article(i: int, url: str | None = None) -> Article:
     return Article(
@@ -51,9 +51,9 @@ def _test_settings(**overrides) -> Settings:
     return Settings(**defaults)
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 # RSS Service
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestRSS:
     def test_parse_feed_returns_articles(self):
@@ -144,9 +144,9 @@ class TestRSS:
         assert articles == []
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 # Gemini Filtering
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestGemini:
     @pytest.mark.anyio
@@ -222,34 +222,182 @@ class TestGemini:
         assert result[1]["title"] == "Article 2"
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
+# Gemini Keywords
+# ================================================================
+
+class TestGenerateKeywords:
+    @pytest.mark.anyio
+    async def test_no_api_key_returns_empty(self):
+        result = await generate_keywords([{"speaker": "Alex", "text": "Hello"}], "")
+        assert result == []
+
+    @pytest.mark.anyio
+    async def test_empty_transcript_returns_empty(self):
+        result = await generate_keywords([], "fake-key")
+        assert result == []
+
+    @pytest.mark.anyio
+    async def test_success(self):
+        mock_response = MagicMock()
+        mock_response.text = '["AI", "Gaming", "Privacy"]'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
+            result = await generate_keywords(
+                [{"speaker": "Alex", "text": "AI is changing gaming and privacy"}],
+                "fake-key",
+            )
+
+        assert result == ["AI", "Gaming", "Privacy"]
+
+    @pytest.mark.anyio
+    async def test_code_fence_stripping(self):
+        mock_response = MagicMock()
+        mock_response.text = '```json\n["AI", "Tech"]\n```'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
+            result = await generate_keywords(
+                [{"speaker": "Alex", "text": "test"}], "fake-key"
+            )
+
+        assert result == ["AI", "Tech"]
+
+    @pytest.mark.anyio
+    async def test_failure_returns_empty(self):
+        with patch("app.services.gemini.genai.Client", side_effect=RuntimeError("fail")):
+            result = await generate_keywords(
+                [{"speaker": "Alex", "text": "test"}], "fake-key"
+            )
+        assert result == []
+
+    @pytest.mark.anyio
+    async def test_max_3_keywords(self):
+        mock_response = MagicMock()
+        mock_response.text = '["A", "B", "C", "D", "E"]'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
+            result = await generate_keywords(
+                [{"speaker": "Alex", "text": "test"}], "fake-key"
+            )
+
+        assert len(result) == 3
+
+    @pytest.mark.anyio
+    async def test_non_list_json_returns_empty(self):
+        mock_response = MagicMock()
+        mock_response.text = '{"keywords": ["AI"]}'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
+            result = await generate_keywords(
+                [{"speaker": "Alex", "text": "test"}], "fake-key"
+            )
+
+        assert result == []
+
+
+# ================================================================
+# Gemini Title
+# ================================================================
+
+class TestGenerateTitle:
+    @pytest.mark.anyio
+    async def test_no_api_key_returns_empty(self):
+        result = await generate_title([{"speaker": "Alex", "text": "Hello"}], "")
+        assert result == ""
+
+    @pytest.mark.anyio
+    async def test_empty_transcript_returns_empty(self):
+        result = await generate_title([], "fake-key")
+        assert result == ""
+
+    @pytest.mark.anyio
+    async def test_success(self):
+        mock_response = MagicMock()
+        mock_response.text = "AI Revolution: What's Next"
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
+            result = await generate_title(
+                [{"speaker": "Alex", "text": "AI is changing everything"}],
+                "fake-key",
+            )
+
+        assert result == "AI Revolution: What's Next"
+
+    @pytest.mark.anyio
+    async def test_strips_quotes(self):
+        mock_response = MagicMock()
+        mock_response.text = '"AI Revolution"'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
+            result = await generate_title(
+                [{"speaker": "Alex", "text": "test"}], "fake-key"
+            )
+
+        assert result == "AI Revolution"
+
+    @pytest.mark.anyio
+    async def test_code_fence_stripping(self):
+        mock_response = MagicMock()
+        mock_response.text = "```\nThe AI Episode\n```"
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.gemini.genai.Client", return_value=mock_client):
+            result = await generate_title(
+                [{"speaker": "Alex", "text": "test"}], "fake-key"
+            )
+
+        assert result == "The AI Episode"
+
+    @pytest.mark.anyio
+    async def test_failure_returns_empty(self):
+        with patch("app.services.gemini.genai.Client", side_effect=RuntimeError("fail")):
+            result = await generate_title(
+                [{"speaker": "Alex", "text": "test"}], "fake-key"
+            )
+        assert result == ""
+
+
+# ================================================================
 # Podcast Script (Podcastfy)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestPodcast:
     def test_parse_transcript_basic(self):
         """Parse Podcastfy XML tags into ScriptLines."""
         text = textwrap.dedent("""\
-            <Person1>\u5927\u5bb6\u597d\uff0c\u6b22\u8fce\u6536\u542c</Person1>
-            <Person2>\u4eca\u5929\u804a\u70b9\u79d1\u6280\u65b0\u95fb</Person2>
-            <Person1>\u7b2c\u4e00\u4e2a\u8bdd\u9898\u662f AI</Person1>
+            <Person1>Hello, welcome to the show</Person1>
+            <Person2>Let's talk about tech news</Person2>
+            <Person1>The first topic is AI</Person1>
         """)
         lines = _parse_transcript(text)
         assert len(lines) == 3
-        assert lines[0] == ScriptLine(speaker="Alex", text="\u5927\u5bb6\u597d\uff0c\u6b22\u8fce\u6536\u542c")
-        assert lines[1] == ScriptLine(speaker="Jordan", text="\u4eca\u5929\u804a\u70b9\u79d1\u6280\u65b0\u95fb")
-        assert lines[2] == ScriptLine(speaker="Alex", text="\u7b2c\u4e00\u4e2a\u8bdd\u9898\u662f AI")
+        assert lines[0] == ScriptLine(speaker="Alex", text="Hello, welcome to the show")
+        assert lines[1] == ScriptLine(speaker="Jordan", text="Let's talk about tech news")
+        assert lines[2] == ScriptLine(speaker="Alex", text="The first topic is AI")
 
     def test_parse_transcript_multiline_content(self):
         """Tags with multiline content are parsed correctly."""
-        text = "<Person1>\u7b2c\u4e00\u884c\n\u7b2c\u4e8c\u884c\n\u7b2c\u4e09\u884c</Person1>"
+        text = "<Person1>Line one\nLine two\nLine three</Person1>"
         lines = _parse_transcript(text)
         assert len(lines) == 1
-        assert "\u7b2c\u4e00\u884c\n\u7b2c\u4e8c\u884c\n\u7b2c\u4e09\u884c" in lines[0]["text"]
+        assert "Line one\nLine two\nLine three" in lines[0]["text"]
 
     def test_parse_transcript_empty_tags_skipped(self):
         """Empty tags produce no ScriptLines."""
-        text = "<Person1></Person1>\n<Person2>\u6709\u5185\u5bb9</Person2>"
+        text = "<Person1></Person1>\n<Person2>Has content</Person2>"
         lines = _parse_transcript(text)
         assert len(lines) == 1
         assert lines[0]["speaker"] == "Jordan"
@@ -275,7 +423,7 @@ class TestPodcast:
         """generate_script calls Podcastfy and parses the result."""
         transcript_file = tmp_path / "transcript.txt"
         transcript_file.write_text(
-            "<Person1>\u4f60\u597d</Person1>\n<Person2>\u5927\u5bb6\u597d</Person2>",
+            "<Person1>Hello</Person1>\n<Person2>Hi there</Person2>",
             encoding="utf-8",
         )
 
@@ -300,9 +448,9 @@ class TestPodcast:
         assert lines == []
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 # TTS Synthesis
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestTTS:
     @pytest.mark.anyio
@@ -310,8 +458,8 @@ class TestTTS:
         """synthesize_lines with inworld provider calls _synthesize_inworld for each line."""
         settings = _test_settings(tts_provider="inworld", inworld_api_key="fake-key")
         lines = [
-            ScriptLine(speaker="Alex", text="\u4f60\u597d"),
-            ScriptLine(speaker="Jordan", text="\u5927\u5bb6\u597d"),
+            ScriptLine(speaker="Alex", text="Hello"),
+            ScriptLine(speaker="Jordan", text="Hi there"),
         ]
 
         with patch("app.services.tts._synthesize_inworld", return_value=Path("/tmp/tts.wav")) as mock_synth:
@@ -324,8 +472,8 @@ class TestTTS:
         """synthesize_lines with google provider calls _synthesize_google for each line."""
         settings = _test_settings(tts_provider="google", gemini_api_key="fake-key")
         lines = [
-            ScriptLine(speaker="Alex", text="\u4f60\u597d"),
-            ScriptLine(speaker="Jordan", text="\u5927\u5bb6\u597d"),
+            ScriptLine(speaker="Alex", text="Hello"),
+            ScriptLine(speaker="Jordan", text="Hi there"),
         ]
 
         with patch("app.services.tts._synthesize_google", return_value=Path("/tmp/tts.wav")) as mock_synth:
@@ -334,9 +482,9 @@ class TestTTS:
         assert len(paths) == 2
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 # Audio Merging
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestAudio:
     def test_merge_concatenates_segments(self):
@@ -373,9 +521,9 @@ class TestAudio:
         assert duration == 10
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 # Cover Image
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestCover:
     def test_generate_cover_url_format(self):
@@ -415,10 +563,72 @@ class TestCover:
         assert bg in all_colors
         assert fg in all_colors
 
+    @pytest.mark.anyio
+    async def test_generate_cover_no_credentials(self):
+        """generate_cover returns None when no API credentials are set."""
+        settings = _test_settings(vertex_project_id="", gemini_api_key="")
+        result = await generate_cover("Test", ["AI"], settings)
+        assert result is None
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    @pytest.mark.anyio
+    async def test_generate_cover_success(self):
+        """generate_cover returns a Path on success."""
+        settings = _test_settings(gemini_api_key="fake-key")
+
+        mock_part = MagicMock()
+        mock_part.inline_data = MagicMock()
+        mock_part.inline_data.data = b"fake-png-data"
+
+        mock_content = MagicMock()
+        mock_content.parts = [mock_part]
+
+        mock_candidate = MagicMock()
+        mock_candidate.content = mock_content
+
+        mock_response = MagicMock()
+        mock_response.candidates = [mock_candidate]
+
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.cover.genai.Client", return_value=mock_client):
+            result = await generate_cover("Test Episode", ["AI"], settings)
+
+        assert result is not None
+        assert result.suffix == ".png"
+        # Clean up
+        result.unlink(missing_ok=True)
+
+    @pytest.mark.anyio
+    async def test_generate_cover_failure_returns_none(self):
+        """generate_cover returns None on API failure."""
+        settings = _test_settings(gemini_api_key="fake-key")
+
+        with patch("app.services.cover.genai.Client", side_effect=RuntimeError("fail")):
+            result = await generate_cover("Test", ["AI"], settings)
+
+        assert result is None
+
+    @pytest.mark.anyio
+    async def test_generate_cover_no_image_in_response(self):
+        """generate_cover returns None when response has no images."""
+        settings = _test_settings(gemini_api_key="fake-key")
+
+        mock_response = MagicMock()
+        mock_response.candidates = []
+
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+
+        with patch("app.services.cover.genai.Client", return_value=mock_client):
+            result = await generate_cover("Test", ["AI"], settings)
+
+        assert result is None
+
+
+# ================================================================
 # R2 Storage
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestStorage:
     def test_upload_builds_correct_url(self, tmp_path):
@@ -475,9 +685,9 @@ class TestStorage:
         assert args[1]["ExtraArgs"]["ContentType"] == "image/png"
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 # Config
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ================================================================
 
 class TestConfig:
     def test_inworld_voice_defaults(self):
@@ -508,3 +718,13 @@ class TestConfig:
             session_secret="x",
         )
         assert s.tts_provider == "inworld"
+
+    def test_vertex_ai_defaults(self):
+        s = Settings(
+            cloudflare_account_id="x",
+            cloudflare_api_token="x",
+            d1_database_id="x",
+            session_secret="x",
+        )
+        assert s.vertex_project_id == ""
+        assert s.vertex_location == "us-central1"

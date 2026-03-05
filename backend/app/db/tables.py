@@ -36,7 +36,7 @@ episode = Table(
     metadata,
     Column("id", Text, primary_key=True),
     Column("title", Text, nullable=False),
-    Column("description", Text, nullable=False, server_default=""),
+    Column("keywords", Text, nullable=False, server_default="[]"),
     Column("cover_url", Text, nullable=False, server_default=""),
     Column("audio_url", Text, nullable=False, server_default=""),
     Column("duration", Integer, nullable=False, server_default="0"),

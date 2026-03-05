@@ -36,13 +36,13 @@ docs/              # 架构决策文档
 - 路由: `app/routers/` — `auth.py`, `episodes.py`, `generate.py`, `tasks.py`, `onboarding.py`
 - 服务层: `app/services/`
   - `rss.py` — feedparser 抓取
-  - `gemini.py` — Google Gemini 筛选
+  - `gemini.py` — Google Gemini 筛选 + 关键词提取 + AI 标题生成
   - `podcast.py` — Podcastfy 脚本生成
   - `tts.py` — Inworld TTS（默认）/ Google Gemini TTS（备选），双声线 Alex + Jordan
   - `audio.py` — pydub/ffmpeg 合并 MP3
   - `storage.py` — R2 上传（boto3 S3 兼容）
-  - `cover.py` — 播客封面生成（渐变色占位图）
-  - `pipeline.py` — 全流程编排（RSS → 筛选 → 脚本 → TTS → 合并 → 上传 → 入库）
+  - `cover.py` — 播客封面生成（Google Imagen，失败时回退渐变色占位图）
+  - `pipeline.py` — 全流程编排（RSS → 筛选 → 脚本 → TTS → 合并 → 关键词 → 标题 → 封面 → 上传 → 入库）
 - CLI: `generate.py` — 手动生成播客；`seed.py` — 填充测试数据；`init_d1.py` — 初始化 D1 表结构
 - 完整 API: `/api/health`, `/api/auth/*`, `/api/episodes`, `/api/episodes/me`, `/api/episodes/{id}`, `/api/generate`, `/api/tasks/{id}`, `/api/onboarding/interests`
 

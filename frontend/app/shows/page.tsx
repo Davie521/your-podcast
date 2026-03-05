@@ -95,7 +95,7 @@ export default function ShowsPage() {
                 <EpisodeRow
                   key={ep.id}
                   title={ep.title}
-                  description={ep.description}
+                  keywords={ep.keywords}
                   creatorName={formatDate(ep.publishedAt)}
                   duration={formatDuration(ep.duration)}
                   coverUrl={ep.coverUrl}
