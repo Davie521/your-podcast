@@ -219,34 +219,124 @@ body {
 }
 
 /* 3D Bubble styling */
+@keyframes tracking-reveal {
+  0% {
+    letter-spacing: -0.5em;
+    opacity: 0;
+    filter: blur(10px);
+  }
+
+  40% {
+    opacity: 0.6;
+  }
+
+  100% {
+    letter-spacing: -1.2px;
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* 3D Bubble styling - High-End Pearl/Glass Finish */
 .bubble-3d {
-  background: radial-gradient(circle at 30% 30%, #4f4f56, #18181b 70%);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(244, 244, 245, 0.8) 70%);
+  border: 1px solid rgba(212, 212, 216, 0.5);
+  backdrop-filter: blur(var(--bubble-blur, 0px));
   box-shadow:
-    inset -4px -4px 10px rgba(0, 0, 0, 0.8),
-    /* inner bottom shadow */
-    inset 4px 4px 10px rgba(255, 255, 255, 0.15),
-    /* inner top highlight */
-    2px 10px 20px rgba(0, 0, 0, 0.4);
-  /* ambient drop shadow */
+    inset -2px -2px 6px rgba(0, 0, 0, 0.04),
+    inset 2px 2px 6px rgba(255, 255, 255, 0.9),
+    2px 10px 30px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+/* Specular Highlight for that "Lens" look */
+.bubble-3d::after {
+  content: "";
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  width: 25%;
+  height: 25%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8), transparent 80%);
+  border-radius: 50%;
+  filter: blur(1px);
+}
+
+/* Bubble pops from far to near */
+@keyframes bubble-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-10deg);
+    filter: blur(8px);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.05) rotate(0deg);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+  }
+}
+
+/* Organic floating drift with swaying */
+@keyframes bubble-float-organic {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate(calc(var(--float-x) * 0.4), calc(var(--float-y) * 0.7)) rotate(2deg);
+  }
+
+  66% {
+    transform: translate(calc(var(--float-x) * 0.8), calc(var(--float-y) * 0.3)) rotate(-1deg);
+  }
+
+  100% {
+    transform: translate(var(--float-x), var(--float-y)) rotate(1.5deg);
+  }
 }
 
 @keyframes eq-bar {
-  from {
-    transform: scaleY(0.15);
+
+  0%,
+  100% {
+    transform: scaleY(0.2);
+    opacity: 0.2;
   }
 
-  to {
+  50% {
     transform: scaleY(1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulse-ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
   }
 }
 
 @keyframes intro-exit {
   from {
     opacity: 1;
+    filter: blur(0);
   }
 
   to {
     opacity: 0;
+    filter: blur(20px);
     pointer-events: none;
   }
 }

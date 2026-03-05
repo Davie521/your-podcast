@@ -51,7 +51,7 @@ const INITIAL_GROUPS: Group[] = [
     label: 'Sports',
     emoji: '⚽',
     categories: [
-      { id: 'sports-general', label: 'Sports' },
+      { id: 'basketball', label: 'Basketball' },
       { id: 'football', label: 'Football' },
       { id: 'cricket', label: 'Cricket' },
       { id: 'tennis', label: 'Tennis' },
@@ -141,11 +141,11 @@ function calculateNodeRadius(node: FlatNode): number {
   if (node.type === 'group') {
     return 80; // Significantly larger for Layer 1 to fill space
   }
-  const baseFontSize = 14;
+  const baseFontSize = 18;
   // Use a more conservative estimation for wrapping text
   const estimatedWidth = node.label.length * (baseFontSize * 0.7) + 40;
   // Ensure categories have enough minimum space for wrapping
-  const r = Math.min(110, Math.max(60, estimatedWidth / 2));
+  const r = Math.min(120, Math.max(65, estimatedWidth / 2));
   return r * L2_SCALE;
 }
 
@@ -192,11 +192,11 @@ function Bubble({ id, label, isSelected, isGroupSelected, isGroup, onTap, select
     textStyles = "font-serif font-medium text-center leading-[1.2] text-[#27272A] tracking-normal";
   }
 
-  let fontSize = isGroup ? 'text-[14px]' : 'text-[12px]';
+  let fontSize = isGroup ? 'text-[16px]' : 'text-[14px]';
   if (isGroup && isGroupSelected) {
-    fontSize = 'text-[22px]';
+    fontSize = 'text-[24px]';
   } else if (!isGroup) {
-    fontSize = 'text-[16px]';
+    fontSize = 'text-[19px]';
   }
 
   return (
@@ -467,7 +467,7 @@ function OnboardingContent() {
 
         <div className="flex flex-col items-center gap-1 pointer-events-auto filter drop-shadow-[0_2px_4px_rgba(255,255,255,0.8)]">
           <span className="font-sans font-bold text-[10px] text-[rgba(0,0,0,0.5)] tracking-[3px] uppercase mt-1">
-            {expandedGroup ? INITIAL_GROUPS.find(g => g.id === expandedGroup)?.label : 'VOX CURATION'}
+            {expandedGroup ? INITIAL_GROUPS.find(g => g.id === expandedGroup)?.label : 'YourPodcast CURATION'}
           </span>
         </div>
         <button
@@ -573,7 +573,7 @@ function OnboardingContent() {
             }}
             className="w-full h-14 bg-black rounded-full shadow-[0px_10px_30px_rgba(0,0,0,0.15)] font-sans font-bold text-[12px] text-white tracking-[2.5px] uppercase transition-transform active:scale-[0.98]"
           >
-            ENTER VOX
+            ENTER YourPodcast
           </button>
         </div>
       </div>
