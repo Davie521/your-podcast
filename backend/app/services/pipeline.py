@@ -13,7 +13,7 @@ from app.config import Settings
 from app.db import DatabaseClient
 from app.db import queries
 from app.schemas import TaskStatus
-from app.services import audio, cover, gemini, podcast, rss, storage, tts
+from app.services import audio, cover, gemini, news, podcast, rss, storage, tts
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +42,15 @@ async def run_pipeline(
     db: DatabaseClient,
     settings: Settings,
     dry_run: bool = False,
+    keywords: list[str] | None = None,
 ) -> dict | None:
     """Execute the full podcast generation pipeline.
 
-    Steps: fetch RSS -> filter with Gemini -> generate script via Podcastfy
-    -> TTS synthesis -> merge audio -> extract keywords -> generate title
-    -> generate cover -> upload to R2 -> save to DB.
+    Two modes:
+    - Keyword-driven (keywords provided): fetch from keyword-mapped RSS sources,
+      use keywords as Gemini filter interests, store input keywords directly.
+    - Legacy (no keywords): static feeds + user interests filter +
+      post-generation keyword extraction.
 
     Updates task.progress at each step for frontend polling.
     """
@@ -60,6 +63,7 @@ async def run_pipeline(
             db=db,
             settings=settings,
             dry_run=dry_run,
+            keywords=keywords,
         )
     except Exception:
         logger.exception("Pipeline failed for task %s", task_id)
@@ -76,11 +80,18 @@ async def _run_pipeline_inner(
     db: DatabaseClient,
     settings: Settings,
     dry_run: bool,
+    keywords: list[str] | None = None,
 ) -> dict | None:
+    keyword_mode = bool(keywords)
+
     # Step 1: Fetch RSS
     await _update_task(db, task_id, "fetching_rss")
-    logger.info("Fetching articles from %d feeds...", len(feed_urls))
-    articles = await rss.fetch_articles(feed_urls)
+    if keyword_mode:
+        logger.info("Keyword mode: fetching articles for keywords %s", keywords)
+        articles = await news.fetch_articles_by_keywords(keywords)
+    else:
+        logger.info("Legacy mode: fetching articles from %d feeds...", len(feed_urls))
+        articles = await rss.fetch_articles(feed_urls)
     logger.info("Fetched %d articles", len(articles))
 
     if not articles:
@@ -91,7 +102,8 @@ async def _run_pipeline_inner(
     # Step 2: Filter with Gemini
     await _update_task(db, task_id, "filtering_articles")
     logger.info("Filtering articles with Gemini...")
-    filtered = await gemini.filter_articles(articles, user["interests"], settings.gemini_api_key)
+    filter_interests = keywords if keyword_mode else user["interests"]
+    filtered = await gemini.filter_articles(articles, filter_interests, settings.gemini_api_key)
     logger.info("Selected %d articles", len(filtered))
 
     # Step 3: Generate script via Podcastfy
@@ -117,9 +129,12 @@ async def _run_pipeline_inner(
     mp3_path, duration = await audio.merge_audio(audio_files)
     logger.info("Merged -> %s (%ds)", mp3_path, duration)
 
-    # Step 5.5: Extract keywords from transcript
-    keywords = await gemini.generate_keywords(script_lines, settings.gemini_api_key)
-    logger.info("Extracted %d keywords", len(keywords))
+    # Step 5.5: Resolve keywords
+    if keyword_mode:
+        logger.info("Using input keywords: %s", keywords)
+    else:
+        keywords = await gemini.generate_keywords(script_lines, settings.gemini_api_key)
+        logger.info("Extracted %d keywords from transcript", len(keywords))
 
     # Step 5.6: Generate AI title from transcript
     ai_title = await gemini.generate_title(script_lines, settings.gemini_api_key)
