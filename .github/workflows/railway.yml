@@ -48,16 +48,35 @@ jobs:
       # Production deploy on push to main or manual trigger
       - name: Deploy to Production
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        run: railway up -d --service your-podcast
+        run: railway up -c --service your-podcast
         working-directory: backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # PR: verify Docker build
+      # PR: verify Docker build + health check
       - name: Verify Docker Build
         if: github.event_name == 'pull_request'
         run: docker build -t podcast-backend-test .
         working-directory: backend
+
+      - name: Verify Health Check
+        if: github.event_name == 'pull_request'
+        run: |
+          docker run -d --name backend-test -p 8099:8000 \
+            -e ENVIRONMENT=production -e SESSION_SECRET=ci-test \
+            podcast-backend-test
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:8099/api/health; then
+              echo " Health check passed"
+              docker stop backend-test
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Health check failed"
+          docker logs backend-test
+          docker stop backend-test
+          exit 1
 
       - name: Comment on PR
         if: github.event_name == 'pull_request'
