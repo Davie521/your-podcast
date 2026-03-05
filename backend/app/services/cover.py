@@ -67,9 +67,9 @@ async def generate_cover(
 
     topics = ", ".join(keywords[:3]) if keywords else "technology"
     prompt = (
-        f"Abstract podcast cover about {topics}. "
-        "Bold colors, gradient background, geometric shapes. "
-        "No text, no letters, no words, no numbers."
+        f"Single simple icon about {topics}. "
+        "Minimal flat design, one centered object, solid pastel background. "
+        "No text, no letters, no words, no numbers, no details."
     )
 
     try:
