@@ -18,27 +18,22 @@ function isLocalHost(host: string): boolean {
 }
 
 function getApiBaseUrl(): string {
-  const envBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (envBaseUrl) {
-    return normalizeBaseUrl(envBaseUrl);
-  }
-
-  // Browser fallback is only safe for local-network development.
+  // In the browser, always use relative paths so requests go through
+  // the Next.js rewrite proxy (same origin → no cross-site cookie issues).
   if (typeof window !== 'undefined') {
+    // Local dev with a separate backend on port 8000
     const host = window.location.hostname;
     if (isLocalHost(host)) {
       return `http://${host}:8000`;
     }
-    throw new Error(
-      'NEXT_PUBLIC_API_URL is required for non-local frontend hosts.',
-    );
+    // Production: relative path → Vercel rewrites proxy to Railway
+    return '';
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:8000';
-  }
-
-  throw new Error('NEXT_PUBLIC_API_URL is required outside local development.');
+  // Server-side (SSR / build) — must use absolute URL for Node fetch
+  const envBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (envBaseUrl) return normalizeBaseUrl(envBaseUrl);
+  return 'http://localhost:8000';
 }
 
 // ── Error ───────────────────────────────────────────────────
@@ -81,6 +76,8 @@ export async function request<T>(
 // ── Auth helpers ────────────────────────────────────────────
 
 export function getOAuthUrl(provider: 'google' | 'github'): string {
+  // Use the same base as API calls — in production this is a relative path
+  // so OAuth goes through the Vercel rewrite proxy, keeping cookies first-party.
   const baseUrl = getApiBaseUrl();
   return `${baseUrl}/api/auth/${provider}`;
 }
