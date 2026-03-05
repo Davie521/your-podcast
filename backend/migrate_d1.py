@@ -51,7 +51,7 @@ def _capture_offline_sql(target_rev: str, starting_rev: str | None = None) -> st
 def _strip_returning(sql: str) -> str:
     """Remove RETURNING clauses that D1 doesn't support."""
     import re
-    return re.sub(r"\s+RETURNING\b.+", "", sql, flags=re.IGNORECASE)
+    return re.sub(r"\s+RETURNING\b.+", "", sql, flags=re.IGNORECASE | re.DOTALL)
 
 
 def _split_sql_statements(sql: str) -> list[str]:

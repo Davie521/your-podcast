@@ -43,7 +43,7 @@ class D1Client:
         try:
             body = resp.json()
             errors = body.get("errors", [])
-            detail = "; ".join(e.get("message", str(e)) for e in errors) if errors else resp.text
+            detail = "; ".join(e.get("message", str(e)) if isinstance(e, dict) else str(e) for e in errors) if errors else resp.text
         except Exception:
             detail = resp.text
         raise httpx.HTTPStatusError(
