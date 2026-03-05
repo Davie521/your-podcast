@@ -60,7 +60,7 @@ Update `.env.example` to match.
 SQLModel models matching the API contract entities:
 
 - **User** — `id` (uuid), `name`, `email` (unique), `avatar_url`, `provider` (google/github), `provider_id`, `interests` (JSON string list), `created_at`
-- **Episode** — `id` (uuid), `title`, `description`, `cover_url`, `audio_url`, `duration`, `is_public`, `creator_id` (FK → User), `published_at`
+- **Episode** — `id` (uuid), `title`, `keywords` (JSON array), `cover_url`, `audio_url`, `duration`, `is_public`, `creator_id` (FK -> User), `published_at`
 - **Source** — `id` (uuid), `episode_id` (FK → Episode), `title`, `url`, `source`
 - **TranscriptLine** — `id` (uuid), `episode_id` (FK → Episode), `order` (int), `speaker`, `text`
 - **Task** — `id` (uuid), `user_id` (FK → User), `status` (enum: pending/processing/completed/failed), `progress` (str), `episode_id` (nullable FK → Episode), `created_at`

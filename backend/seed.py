@@ -8,6 +8,7 @@ Usage:
 
 import argparse
 import asyncio
+import json
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -18,8 +19,8 @@ SYSTEM_EMAIL = "seed@your-podcast.local"
 
 SAMPLE_EPISODES = [
     {
-        "title": "GPT-5 Launch, WWDC Preview, Nvidia Hits $4T",
-        "description": "GPT-5 · WWDC 2026 · Nvidia $4T",
+        "title": "GPT-5 Launches, iOS 20 Preview & Nvidia Hits $4T",
+        "keywords": ["GPT-5", "WWDC 2026", "Nvidia"],
         "duration": 480,
         "sources": [
             {"title": "OpenAI launches GPT-5 with massive multimodal reasoning improvements", "url": "https://techcrunch.com/example-1", "source": "TechCrunch"},
@@ -40,8 +41,8 @@ SAMPLE_EPISODES = [
         ],
     },
     {
-        "title": "Rust 2026 Edition, WebGPU Goes Cross-Browser",
-        "description": "Rust 2026 · WebGPU · Llama 4",
+        "title": "Rust 2026 Edition Ships & WebGPU Goes Cross-Browser",
+        "keywords": ["Rust", "WebGPU", "Llama 4"],
         "duration": 420,
         "sources": [
             {"title": "Rust 2026 Edition officially released with stable async traits", "url": "https://arstechnica.com/example-2", "source": "Ars Technica"},
@@ -57,8 +58,8 @@ SAMPLE_EPISODES = [
         ],
     },
     {
-        "title": "Copilot X Upgrade, Tesla FSD Hits Europe",
-        "description": "Copilot X · Tesla FSD V13 · Project Astra",
+        "title": "Copilot X Gets Smarter, Tesla FSD Hits Europe & Project Astra",
+        "keywords": ["Copilot X", "Tesla FSD", "Project Astra"],
         "duration": 360,
         "sources": [
             {"title": "GitHub Copilot X major update: full repository context understanding", "url": "https://techcrunch.com/example-2", "source": "TechCrunch"},
@@ -101,7 +102,7 @@ async def seed(db: DatabaseClient) -> None:
         episode = {
             "id": episode_id,
             "title": ep_data["title"],
-            "description": ep_data["description"],
+            "keywords": json.dumps(ep_data["keywords"]),
             "cover_url": f"https://placehold.co/800x800/6366f1/a855f7.png?text=EP{i + 1}",
             "audio_url": f"https://cdn.example.com/episodes/sample-{i + 1}.mp3",
             "duration": ep_data["duration"],
@@ -113,10 +114,10 @@ async def seed(db: DatabaseClient) -> None:
         # Build batch statements
         stmts: list[dict] = []
         stmts.append({
-            "sql": """INSERT INTO episode (id, title, description, cover_url, audio_url, duration, is_public, creator_id, published_at)
+            "sql": """INSERT INTO episode (id, title, keywords, cover_url, audio_url, duration, is_public, creator_id, published_at)
                       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)""",
             "params": [
-                episode["id"], episode["title"], episode["description"],
+                episode["id"], episode["title"], episode["keywords"],
                 episode["cover_url"], episode["audio_url"], episode["duration"],
                 episode["creator_id"], episode["published_at"],
             ],

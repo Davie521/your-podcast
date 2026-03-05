@@ -24,7 +24,7 @@ class SourceItem(BaseModel):
 class EpisodeListItem(BaseModel):
     id: str
     title: str
-    description: str
+    keywords: list[str]
     cover_url: str
     audio_url: str
     duration: int

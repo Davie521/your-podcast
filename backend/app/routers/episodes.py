@@ -1,3 +1,6 @@
+import json
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.auth import get_current_user, get_optional_user
@@ -10,14 +13,26 @@ from app.schemas import (
     SourceItem,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/episodes", tags=["episodes"])
+
+
+def _parse_keywords(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        logger.warning("Malformed keywords JSON in DB: %s", raw)
+        return []
 
 
 def _row_to_list_item(row: dict) -> EpisodeListItem:
     return EpisodeListItem(
         id=row["id"],
         title=row["title"],
-        description=row["description"],
+        keywords=_parse_keywords(row.get("keywords")),
         cover_url=row["cover_url"],
         audio_url=row["audio_url"],
         duration=row["duration"],

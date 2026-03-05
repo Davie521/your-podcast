@@ -248,12 +248,12 @@ async def save_pipeline_result(
 
     # Insert episode
     stmts.append({
-        "sql": """INSERT INTO episode (id, title, description, cover_url, audio_url, duration, is_public, creator_id, published_at)
+        "sql": """INSERT INTO episode (id, title, keywords, cover_url, audio_url, duration, is_public, creator_id, published_at)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         "params": [
             episode["id"],
             episode["title"],
-            episode["description"],
+            episode["keywords"],
             episode["cover_url"],
             episode["audio_url"],
             episode["duration"],

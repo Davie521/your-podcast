@@ -8,7 +8,7 @@ export interface Source {
 export interface Episode {
   readonly id: string;
   readonly title: string;
-  readonly description: string;
+  readonly keywords: readonly string[];
   readonly coverUrl: string;
   readonly audioUrl: string;
   readonly duration: number;

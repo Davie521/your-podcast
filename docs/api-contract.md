@@ -21,7 +21,7 @@
 | -------------- | --------- | -------------------------------------- |
 | `id`           | uuid      | Primary key                            |
 | `title`        | string    | Episode title                          |
-| `description`  | string    | Brief summary of topics covered        |
+| `keywords`     | string[]  | Topic keywords (e.g. ["AI", "Gaming"]) |
 | `cover_url`    | string    | Square cover image URL (R2)            |
 | `audio_url`    | string    | Public R2 URL to MP3                   |
 | `duration`     | int       | Length in seconds                       |
@@ -171,7 +171,7 @@ Public feed — all public episodes, newest first. No auth required.
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "title": "科技早报 — 2026年3月1日",
-      "description": "今日话题：...",
+      "keywords": ["AI", "Tech", "Gaming"],
       "cover_url": "https://r2-public-url/covers/550e8400.jpg",
       "audio_url": "https://r2-public-url/episodes/550e8400.mp3",
       "duration": 360,
@@ -206,8 +206,8 @@ Single episode with full detail (sources). No auth required for public episodes;
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "科技早报 — 2026年3月1日",
-  "description": "今日话题：...",
+  "title": "Tech News -- March 1, 2026",
+  "keywords": ["AI", "Tech", "Gaming"],
   "cover_url": "https://r2-public-url/covers/550e8400.jpg",
   "audio_url": "https://r2-public-url/episodes/550e8400.mp3",
   "duration": 360,

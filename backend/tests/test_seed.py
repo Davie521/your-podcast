@@ -18,7 +18,7 @@ class TestSeed:
         await seed(db)
         user = await queries.get_user_by_email(db, SYSTEM_EMAIL)
         assert user is not None
-        assert user["name"] == "Seed User"
+        assert user["name"] == "Yifan"
 
     @pytest.mark.anyio
     async def test_seed_creates_sources(self, db):

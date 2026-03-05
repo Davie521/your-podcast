@@ -104,7 +104,7 @@ export function isLocalDev(): boolean {
 interface ApiEpisode {
   id: string;
   title: string;
-  description: string;
+  keywords: string[];
   cover_url: string;
   audio_url: string;
   duration: number;
@@ -138,7 +138,7 @@ function toEpisode(raw: ApiEpisode): Episode {
   return {
     id: raw.id,
     title: raw.title,
-    description: raw.description,
+    keywords: raw.keywords,
     coverUrl: raw.cover_url,
     audioUrl: raw.audio_url,
     duration: raw.duration,
