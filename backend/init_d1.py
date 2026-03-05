@@ -1,41 +1,39 @@
 #!/usr/bin/env python
-"""Initialize database schema (works with both D1 and local SQLite).
+"""Initialize database schema.
+
+Thin wrapper around Alembic migrations:
+  - sqlite: runs `alembic upgrade head`
+  - d1: delegates to `migrate_d1.py upgrade head`
 
 Usage:
-    python init_d1.py          # create tables + indexes
-    python init_d1.py --drop   # drop all tables first, then recreate
+    python init_d1.py
 """
 
-import argparse
-import asyncio
+import subprocess
+import sys
+from pathlib import Path
 
-from app.database import create_db_client
-from app.schema import DROP_STATEMENTS, SCHEMA_STATEMENTS
-
-
-async def init_schema(drop: bool = False) -> None:
-    db = create_db_client()
-    try:
-        if drop:
-            print("Dropping existing tables...")
-            stmts = [{"sql": s} for s in DROP_STATEMENTS]
-            await db.batch(stmts)
-            print("Tables dropped.")
-
-        print("Creating tables and indexes...")
-        stmts = [{"sql": s} for s in SCHEMA_STATEMENTS]
-        await db.batch(stmts)
-        print("Database schema initialized successfully.")
-    finally:
-        await db.aclose()
+from app.config import get_settings
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Initialize database schema")
-    parser.add_argument("--drop", action="store_true", help="Drop all tables before recreating")
-    args = parser.parse_args()
+    backend_dir = Path(__file__).resolve().parent
+    settings = get_settings()
 
-    asyncio.run(init_schema(drop=args.drop))
+    if settings.database_backend == "d1":
+        print("DATABASE_BACKEND=d1 — running migrate_d1.py upgrade head")
+        result = subprocess.run(
+            [sys.executable, "migrate_d1.py", "upgrade", "head"],
+            cwd=backend_dir,
+        )
+    else:
+        print("DATABASE_BACKEND=sqlite — running alembic upgrade head (local SQLite)")
+        result = subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "head"],
+            cwd=backend_dir,
+        )
+
+    sys.exit(result.returncode)
 
 
 if __name__ == "__main__":

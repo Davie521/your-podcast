@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app import d1_database
+from app.db import queries
 from app.config import Settings
-from app.models import TaskStatus
+from app.schemas import TaskStatus
 from app.services.pipeline import run_pipeline
 
 
@@ -30,7 +30,7 @@ def _test_settings(**overrides) -> Settings:
 
 
 async def _make_user(db) -> dict:
-    user = await d1_database.upsert_user(
+    user = await queries.upsert_user(
         db,
         email=f"pipeline-{uuid.uuid4().hex[:8]}@test.com",
         name="Pipeline User",
@@ -38,13 +38,13 @@ async def _make_user(db) -> dict:
         provider="system",
         provider_id="system",
     )
-    await d1_database.update_user_interests(db, user["id"], ["AI", "\u79d1\u6280"])
+    await queries.update_user_interests(db, user["id"], ["AI", "\u79d1\u6280"])
     user["interests"] = ["AI", "\u79d1\u6280"]
     return user
 
 
 async def _make_task(db, user: dict) -> dict:
-    return await d1_database.create_task(
+    return await queries.create_task(
         db, user_id=user["id"], status=TaskStatus.pending, progress="starting"
     )
 
@@ -67,7 +67,7 @@ async def test_pipeline_no_articles(db):
         )
 
     assert result is None
-    task = await d1_database.get_task_by_id(db, task["id"])
+    task = await queries.get_task_by_id(db, task["id"])
     assert task["status"] == TaskStatus.failed
     assert "no articles" in task["progress"]
 
@@ -96,7 +96,7 @@ async def test_pipeline_script_generation_fails(db):
         )
 
     assert result is None
-    task = await d1_database.get_task_by_id(db, task["id"])
+    task = await queries.get_task_by_id(db, task["id"])
     assert task["status"] == TaskStatus.failed
     assert "script generation" in task["progress"]
 
@@ -140,7 +140,7 @@ async def test_pipeline_full_success(db):
     assert result["creator_id"] == user["id"]
 
     # Check task completed
-    task = await d1_database.get_task_by_id(db, task["id"])
+    task = await queries.get_task_by_id(db, task["id"])
     assert task["status"] == TaskStatus.completed
     assert task["progress"] == "done"
     assert task["episode_id"] == result["id"]
@@ -211,6 +211,6 @@ async def test_pipeline_unexpected_error_marks_failed(db):
         )
 
     assert result is None
-    task = await d1_database.get_task_by_id(db, task["id"])
+    task = await queries.get_task_by_id(db, task["id"])
     assert task["status"] == TaskStatus.failed
     assert "unexpected error" in task["progress"]

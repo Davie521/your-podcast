@@ -25,9 +25,14 @@ docs/              # 架构决策文档
 
 - 入口: `app/main.py` (FastAPI)
 - 配置: `app/config.py` (环境变量)
-- 模型: `app/models.py` (仅含 TaskStatus 枚举)
-- 数据库: `app/d1_database.py` (D1 查询层，返回 dict)
+- Schemas: `app/schemas.py` (Pydantic 响应模型 + TaskStatus 枚举)
+- 数据库层: `app/db/`
+  - `client.py` — DatabaseClient Protocol + 工厂函数 (get_db, create_db_client)
+  - `tables.py` — SQLAlchemy Core Table 定义（Alembic 迁移的单一事实来源）
+  - `queries.py` — SQL 查询函数（返回 dict）
 - D1 客户端: `app/services/d1.py` (Cloudflare D1 REST API 封装)
+- 本地 SQLite: `app/services/local_sqlite.py` (开发用 SQLite 适配器)
+- 迁移: `alembic/` (Alembic 配置 + 版本)，`migrate_d1.py` (D1 迁移 runner)
 - 路由: `app/routers/` — `auth.py`, `episodes.py`, `generate.py`, `tasks.py`, `onboarding.py`
 - 服务层: `app/services/`
   - `rss.py` — feedparser 抓取
@@ -72,14 +77,19 @@ docs/              # 架构决策文档
 
 ```bash
 # 后端
-cd backend && pip install -r requirements.txt
+cd backend && uv sync
 uvicorn app.main:app --reload
 
 # 前端
 cd frontend && npm install && npm run dev
 
-# 初始化 D1 表结构（首次部署）
-cd backend && python init_d1.py
+# 数据库迁移
+cd backend && uv run alembic upgrade head          # 本地 SQLite
+cd backend && uv run python migrate_d1.py upgrade head   # D1（需环境变量）
+cd backend && uv run python migrate_d1.py current        # 查看 D1 当前版本
+
+# 新建迁移（改完 app/db/tables.py 后）
+cd backend && uv run alembic revision --autogenerate -m "描述"
 
 # 生成播客
 cd backend && python generate.py
@@ -130,5 +140,6 @@ cd frontend && vercel         # 前端
 - 播客生成是长任务（几分钟），后端接口需要异步处理或后台任务
 - TTS 需要逐句调用再用 ffmpeg 拼接，注意错误重试（Inworld 最多 5 次重试）
 - R2 上传使用 boto3 (S3 兼容)，endpoint 指向 Cloudflare
-- **数据库**：已迁移到 Cloudflare D1（通过 REST API 访问），需配置 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `D1_DATABASE_ID`。初始化表结构：`python init_d1.py`
+- **数据库**：通过 `DATABASE_BACKEND` 环境变量切换。`d1` = Cloudflare D1（生产），`sqlite` = 本地文件（开发）。不设则按 `ENVIRONMENT` 自动选择
+- **数据库迁移**：Alembic 管理 schema 变更。本地用 `alembic upgrade head`（连本地 SQLite），D1 用 `migrate_d1.py upgrade head`（offline SQL → D1 REST API）。CI 会验证迁移一致性（`alembic check`）。首次部署 D1 需先 `migrate_d1.py stamp 0001`
 - 前端环境变量：`NEXT_PUBLIC_API_URL` 指向 Railway 后端地址（本地开发默认 `http://localhost:8000`）

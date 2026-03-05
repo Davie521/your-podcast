@@ -5,60 +5,9 @@ from httpx import ASGITransport, AsyncClient
 
 from app.auth import create_session_cookie, SESSION_COOKIE_NAME
 from app.config import Settings
-from app.database import get_db
+from app.db import get_db
+from app.db.tables import metadata
 from app.services.d1 import D1Client
-
-
-# ── Schema matching init_d1.py ────────────────────────────────
-
-SCHEMA = """
-CREATE TABLE user (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    avatar_url TEXT NOT NULL DEFAULT '',
-    provider TEXT NOT NULL,
-    provider_id TEXT NOT NULL,
-    interests TEXT NOT NULL DEFAULT '[]',
-    created_at TEXT NOT NULL
-);
-CREATE TABLE episode (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    cover_url TEXT NOT NULL DEFAULT '',
-    audio_url TEXT NOT NULL DEFAULT '',
-    duration INTEGER NOT NULL DEFAULT 0,
-    is_public INTEGER NOT NULL DEFAULT 1,
-    creator_id TEXT NOT NULL REFERENCES user(id),
-    published_at TEXT NOT NULL
-);
-CREATE TABLE source (
-    id TEXT PRIMARY KEY,
-    episode_id TEXT NOT NULL REFERENCES episode(id),
-    title TEXT NOT NULL,
-    url TEXT NOT NULL,
-    source TEXT NOT NULL
-);
-CREATE TABLE transcript_line (
-    id TEXT PRIMARY KEY,
-    episode_id TEXT NOT NULL REFERENCES episode(id),
-    line_order INTEGER NOT NULL,
-    speaker TEXT NOT NULL,
-    text TEXT NOT NULL
-);
-CREATE TABLE task (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES user(id),
-    status TEXT NOT NULL DEFAULT 'pending',
-    progress TEXT NOT NULL DEFAULT '',
-    episode_id TEXT REFERENCES episode(id),
-    created_at TEXT NOT NULL
-);
-CREATE UNIQUE INDEX idx_task_one_active_per_user
-    ON task(user_id)
-    WHERE status IN ('pending', 'processing');
-"""
 
 
 class FakeD1Client(D1Client):
@@ -68,7 +17,11 @@ class FakeD1Client(D1Client):
         # Skip parent __init__ — we don't need Cloudflare credentials
         self._conn = sqlite3.connect(":memory:")
         self._conn.row_factory = sqlite3.Row
-        self._conn.executescript(SCHEMA)
+        # Use SQLAlchemy metadata to create tables (single source of truth)
+        from sqlalchemy import create_engine
+        engine = create_engine("sqlite://", creator=lambda: self._conn)
+        metadata.create_all(engine)
+        self._conn.commit()
 
     async def execute(self, sql: str, params: list | None = None) -> list[dict]:
         cursor = self._conn.execute(sql, params or [])
@@ -95,6 +48,7 @@ _test_settings = Settings(
     cloudflare_account_id="test",
     cloudflare_api_token="test",
     d1_database_id="test",
+    database_backend="sqlite",
     session_secret="test-secret-key",
     frontend_url="http://localhost:3000",
 )
@@ -132,9 +86,9 @@ async def client(db):
 
 @pytest.fixture()
 async def test_user(db):
-    from app import d1_database
+    from app.db import queries
 
-    user = await d1_database.upsert_user(
+    user = await queries.upsert_user(
         db,
         email="test@example.com",
         name="Test User",
@@ -142,7 +96,7 @@ async def test_user(db):
         provider="google",
         provider_id="12345",
     )
-    await d1_database.update_user_interests(db, user["id"], ["AI", "Python"])
+    await queries.update_user_interests(db, user["id"], ["AI", "Python"])
     user["interests"] = ["AI", "Python"]
     return user
 

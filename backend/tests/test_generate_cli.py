@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app import d1_database
-from app.models import TaskStatus
+from app.db import queries
+from app.schemas import TaskStatus
 
 # Import CLI functions
 from generate import (

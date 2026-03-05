@@ -3,14 +3,11 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
-from app import d1_database
 from app.auth import get_current_user
 from app.config import Settings, get_settings
-from app.database import get_db
-from app.models import TaskStatus
-from app.database import create_db_client
-from app.schemas import TaskResponse
-from app.services.d1 import D1Client
+from app.db import DatabaseClient, create_db_client, get_db
+from app.db import queries
+from app.schemas import TaskResponse, TaskStatus
 
 DEFAULT_FEEDS = [
     "https://feeds.arstechnica.com/arstechnica/index",
@@ -52,8 +49,8 @@ async def _run_in_background(
 
     db = create_db_client(settings)
     try:
-        task = await d1_database.get_task_by_id(db, task_id)
-        user = await d1_database.get_user_by_id(db, user_id)
+        task = await queries.get_task_by_id(db, task_id)
+        user = await queries.get_user_by_id(db, user_id)
         if not task or not user:
             return
 
@@ -74,14 +71,14 @@ async def generate_episode(
     body: GenerateRequest = GenerateRequest(),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user: dict = Depends(get_current_user),
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
     feed_urls = _resolve_feeds(body.feeds, settings)
     episode_date = body.date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     try:
-        task = await d1_database.create_task(
+        task = await queries.create_task(
             db, user_id=current_user["id"], status="pending", progress="queued"
         )
     except ValueError:

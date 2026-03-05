@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app import d1_database
 from app.auth import get_current_user
-from app.database import get_db
-from app.models import TaskStatus
-from app.schemas import TaskResponse
-from app.services.d1 import D1Client
+from app.db import DatabaseClient, get_db
+from app.db import queries
+from app.schemas import TaskResponse, TaskStatus
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -14,9 +12,9 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 async def get_task(
     task_id: str,
     current_user: dict = Depends(get_current_user),
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
 ):
-    task = await d1_database.get_task_by_id(db, task_id)
+    task = await queries.get_task_by_id(db, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     if task["user_id"] != current_user["id"]:

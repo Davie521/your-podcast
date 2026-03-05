@@ -11,9 +11,8 @@ import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from app import d1_database
-from app.database import create_db_client
-from app.services.d1 import D1Client
+from app.db import DatabaseClient, create_db_client
+from app.db import queries
 
 SYSTEM_EMAIL = "seed@your-podcast.local"
 
@@ -78,10 +77,10 @@ SAMPLE_EPISODES = [
 ]
 
 
-async def seed(db: D1Client) -> None:
-    user = await d1_database.get_user_by_email(db, SYSTEM_EMAIL)
+async def seed(db: DatabaseClient) -> None:
+    user = await queries.get_user_by_email(db, SYSTEM_EMAIL)
     if not user:
-        user = await d1_database.upsert_user(
+        user = await queries.upsert_user(
             db,
             email=SYSTEM_EMAIL,
             name="Yifan",
@@ -89,7 +88,7 @@ async def seed(db: D1Client) -> None:
             provider="system",
             provider_id="seed",
         )
-        await d1_database.update_user_interests(
+        await queries.update_user_interests(
             db, user["id"], ["AI", "technology", "programming", "startups"]
         )
 
@@ -140,8 +139,8 @@ async def seed(db: D1Client) -> None:
     print(f"Seeded {len(SAMPLE_EPISODES)} episodes for user {user['name']} ({user['email']})")
 
 
-async def clear(db: D1Client) -> None:
-    user = await d1_database.get_user_by_email(db, SYSTEM_EMAIL)
+async def clear(db: DatabaseClient) -> None:
+    user = await queries.get_user_by_email(db, SYSTEM_EMAIL)
     if not user:
         print("No seed user found, nothing to clear")
         return

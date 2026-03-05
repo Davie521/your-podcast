@@ -21,7 +21,7 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     yield
     # Close the shared DB client if it was created
-    import app.database as db_module
+    import app.db.client as db_module
     if db_module._db_client is not None:
         await db_module._db_client.aclose()
 

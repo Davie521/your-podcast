@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -39,8 +40,11 @@ class Settings(BaseSettings):
     inworld_tts_voice_female: str = "Sarah"
 
     # Environment: "development" or "production"
-    # Auto-detected if not set: development when D1 credentials are missing
-    environment: str = ""
+    environment: str = "development"
+
+    # Database backend: "d1" (Cloudflare D1) or "sqlite" (local file)
+    # Defaults to "sqlite" in development, "d1" in production
+    database_backend: str = ""
 
     # Dev mode — saves MP3 to current directory instead of temp
     dev_mode: bool = False
@@ -59,14 +63,15 @@ class Settings(BaseSettings):
     def is_dev(self) -> bool:
         return self.environment == "development"
 
+    @model_validator(mode="after")
+    def _default_database_backend(self) -> "Settings":
+        if not self.database_backend:
+            self.database_backend = "sqlite" if self.is_dev else "d1"
+        return self
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache
 def get_settings() -> Settings:
-    s = Settings()
-    # Auto-detect environment if not explicitly set
-    if not s.environment:
-        has_d1 = bool(s.cloudflare_account_id and s.cloudflare_api_token and s.d1_database_id)
-        s.environment = "production" if has_d1 else "development"
-    return s
+    return Settings()

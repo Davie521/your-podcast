@@ -2,7 +2,7 @@
 
 import pytest
 
-from app import d1_database
+from app.db import queries
 from seed import SAMPLE_EPISODES, SYSTEM_EMAIL, clear, seed
 
 
@@ -16,7 +16,7 @@ class TestSeed:
     @pytest.mark.anyio
     async def test_seed_creates_user(self, db):
         await seed(db)
-        user = await d1_database.get_user_by_email(db, SYSTEM_EMAIL)
+        user = await queries.get_user_by_email(db, SYSTEM_EMAIL)
         assert user is not None
         assert user["name"] == "Seed User"
 
@@ -51,7 +51,7 @@ class TestSeed:
         assert await db.execute("SELECT * FROM episode") == []
         assert await db.execute("SELECT * FROM source") == []
         assert await db.execute("SELECT * FROM transcript_line") == []
-        user = await d1_database.get_user_by_email(db, SYSTEM_EMAIL)
+        user = await queries.get_user_by_email(db, SYSTEM_EMAIL)
         assert user is None
 
     @pytest.mark.anyio

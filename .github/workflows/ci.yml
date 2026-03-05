@@ -53,3 +53,9 @@ jobs:
 
       - name: Check import
         run: uv run python -c "from app.main import app; print('OK')"
+
+      - name: Verify migrations
+        run: uv run alembic upgrade head
+
+      - name: Check schema consistency
+        run: uv run alembic check

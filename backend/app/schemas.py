@@ -1,8 +1,14 @@
+import enum
 from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.models import TaskStatus
+
+class TaskStatus(str, enum.Enum):
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
 
 
 # ── Episodes ──────────────────────────────────────────────────

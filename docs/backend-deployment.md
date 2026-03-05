@@ -74,14 +74,18 @@ railway up
 
 | 变量 | 说明 | 是否必填 |
 |------|------|---------|
+| `ENVIRONMENT` | `production`（Railway）/ `development`（本地） | 必填 |
+| `DATABASE_BACKEND` | `d1`（Railway）/ `sqlite`（本地），不填则按 ENVIRONMENT 自动选 | 推荐填 |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID | 生产必填 |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token | 生产必填 |
+| `D1_DATABASE_ID` | D1 数据库 ID | 生产必填 |
 | `FRONTEND_URL` | 前端 Vercel 域名（CORS 用） | 部署前端后填 |
-| `GEMINI_API_KEY` | Google Gemini API Key | 开发时填 |
-| `GLM_API_KEY` | 智谱 GLM API Key | 开发时填 |
-| `R2_ACCOUNT_ID` | Cloudflare R2 Account ID | 开发时填 |
-| `R2_ACCESS_KEY_ID` | R2 Access Key | 开发时填 |
-| `R2_SECRET_ACCESS_KEY` | R2 Secret Key | 开发时填 |
-| `R2_BUCKET_NAME` | R2 Bucket 名称 | 开发时填 |
-| `R2_PUBLIC_URL` | R2 公开访问 URL | 开发时填 |
+| `GEMINI_API_KEY` | Google Gemini API Key | 生成播客时填 |
+| `R2_ACCOUNT_ID` | Cloudflare R2 Account ID | 生成播客时填 |
+| `R2_ACCESS_KEY_ID` | R2 Access Key | 生成播客时填 |
+| `R2_SECRET_ACCESS_KEY` | R2 Secret Key | 生成播客时填 |
+| `R2_BUCKET_NAME` | R2 Bucket 名称 | 生成播客时填 |
+| `R2_PUBLIC_URL` | R2 公开访问 URL | 生成播客时填 |
 
 > 注意：`PORT` 由 Railway 自动注入，不需要手动设置。
 

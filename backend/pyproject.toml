@@ -22,6 +22,9 @@ dependencies = [
     "python-multipart>=0.0.9",
     # Local dev database
     "aiosqlite>=0.20",
+    # Schema & migrations
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
 ]
 
 [project.optional-dependencies]

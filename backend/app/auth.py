@@ -2,9 +2,8 @@ from fastapi import Cookie, Depends, HTTPException, status
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from app.config import Settings, get_settings
-from app.database import get_db
-from app.services.d1 import D1Client
-from app import d1_database
+from app.db import DatabaseClient, get_db
+from app.db import queries
 
 SESSION_COOKIE_NAME = "podcast_session"
 SESSION_MAX_AGE = 30 * 24 * 3600  # 30 days
@@ -29,7 +28,7 @@ def _decode_session(token: str, settings: Settings) -> str | None:
 
 
 async def get_current_user(
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
     settings: Settings = Depends(get_settings),
     session_cookie: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
 ) -> dict:
@@ -38,14 +37,14 @@ async def get_current_user(
     user_id = _decode_session(session_cookie, settings)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
-    user = await d1_database.get_user_by_id(db, user_id)
+    user = await queries.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
 
 async def get_optional_user(
-    db: D1Client = Depends(get_db),
+    db: DatabaseClient = Depends(get_db),
     settings: Settings = Depends(get_settings),
     session_cookie: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
 ) -> dict | None:
@@ -54,4 +53,4 @@ async def get_optional_user(
     user_id = _decode_session(session_cookie, settings)
     if not user_id:
         return None
-    return await d1_database.get_user_by_id(db, user_id)
+    return await queries.get_user_by_id(db, user_id)
