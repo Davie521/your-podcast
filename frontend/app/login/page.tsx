@@ -30,8 +30,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setPhase('reveal');
-      return;
+      const t = setTimeout(() => setPhase('reveal'), 0);
+      return () => clearTimeout(t);
     }
     // Double-rAF: guarantees browser paints init (opacity 0) before transition starts
     const raf = requestAnimationFrame(() => {
