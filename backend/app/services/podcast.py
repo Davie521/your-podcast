@@ -5,8 +5,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TypedDict
 
-from podcastfy.client import generate_podcast
-
 from app.services.rss import Article
 
 logger = logging.getLogger(__name__)
@@ -91,6 +89,8 @@ def _generate_transcript(text: str, api_key: str) -> str | None:
     try:
         import os
         os.environ["GEMINI_API_KEY"] = api_key
+
+        from podcastfy.client import generate_podcast
 
         result = generate_podcast(
             text=text,

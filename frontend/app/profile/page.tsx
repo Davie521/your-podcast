@@ -11,13 +11,16 @@ import { useAuthDispatch } from '@/hooks/useAuthDispatch';
 function SettingRow({
   label,
   subtitle,
+  onClick,
 }: {
   readonly label: string;
   readonly subtitle?: string;
+  readonly onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex w-full items-center justify-between py-4 border-b border-border-warm tap-feedback"
     >
       <div className="text-left">
@@ -75,25 +78,24 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile row */}
-        <button
-          type="button"
-          aria-label="View profile"
-          className="flex w-full items-center gap-4 pb-4 border-b border-border-warm tap-feedback animate-fade-in anim-delay-1"
-        >
+        <div className="flex w-full items-center gap-4 pb-4 border-b border-border-warm animate-fade-in anim-delay-1">
           <div className="flex-1 min-w-0 text-left">
             <p className="font-serif font-bold text-[16px] leading-5 text-[#111]">{user.name}</p>
             <p className="font-inter text-[12px] text-[#666] mt-1">{user.email}</p>
           </div>
-          <ChevronRightIcon className="size-[18px] text-[#c0c0b5]" />
-        </button>
+        </div>
 
         {/* General section */}
         <section className="mt-8 animate-fade-in anim-delay-2">
           <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
             General
           </h2>
-          <SettingRow label="Interests" subtitle="Coming soon" />
-          <SettingRow label="Help & FAQ" />
+          <SettingRow
+            label="Interests"
+            subtitle={user.interests.length > 0 ? `${user.interests.length} selected` : 'Set your interests'}
+            onClick={() => router.push('/onboarding')}
+          />
+          <SettingRow label="Help & FAQ" onClick={() => router.push('/help')} />
         </section>
 
         {/* Log Out */}
