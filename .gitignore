@@ -5,3 +5,4 @@ screenshots/
 *.mp3
 .vscode/
 .worktrees/
+.next/
