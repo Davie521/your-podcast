@@ -141,6 +141,10 @@ body {
   .animate-pulse-ring {
     animation: none;
   }
+
+  .tap-feedback:active {
+    transform: none;
+  }
 }
 
 /* ── Login Page Entrance ── */

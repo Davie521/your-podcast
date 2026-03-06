@@ -220,6 +220,16 @@ export default function OnboardingPage() {
     if (status === 'unauthenticated') router.replace('/login');
   }, [status, router]);
 
+  /* Cleanup all timers on unmount */
+  useEffect(() => {
+    const ct = collapseTimers.current;
+    const ck = crackTimers.current;
+    return () => {
+      ct.forEach(clearTimeout);
+      ck.forEach(clearTimeout);
+    };
+  }, []);
+
   const isPackedMode = expandedSet.size > 0;
 
   /* Build pack items: unexpanded cats are large, expanded subs are small */
@@ -271,7 +281,7 @@ export default function OnboardingPage() {
   const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       const n = new Set(prev);
-      if (n.has(id)) { n.delete(id); } else { n.add(id); }
+      if (n.has(id)) { n.delete(id); } else if (n.size < 10) { n.add(id); }
       return n;
     });
     setBouncingId(id);
@@ -407,7 +417,7 @@ export default function OnboardingPage() {
                 </>
               )}
 
-              <button type="button" onClick={() => handleBigBubbleTap(cat.id)}
+              <button type="button" aria-expanded={isExp} onClick={() => handleBigBubbleTap(cat.id)}
                 style={{
                   width: targetSize, height: targetSize,
                   left: isExp ? expLeft : targetLeft,
@@ -443,8 +453,8 @@ export default function OnboardingPage() {
         {CATEGORIES.map((cat, catIdx) => {
           if (!expandedSet.has(cat.id)) return null;
           const origin = burstOrigins.current.get(cat.id) ?? DEFAULT_POS[catIdx];
-          const originCx = 'cx' in origin ? origin.cx : (origin as { cx: number }).cx;
-          const originCy = 'cy' in origin ? origin.cy : (origin as { cy: number }).cy;
+          const originCx = origin.cx;
+          const originCy = origin.cy;
           const isBurst = burstSet.has(cat.id);
 
           return cat.subs.map((sub, j) => {
