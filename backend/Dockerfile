@@ -16,7 +16,7 @@ RUN uv sync --frozen --no-dev
 
 # Remove heavy transitive deps from podcastfy that we don't use at runtime
 RUN .venv/bin/pip uninstall -y \
-    playwright pymupdf pyarrow pandas numpy cython \
+    pymupdf pyarrow pandas numpy cython \
     sphinx sphinx-rtd-theme sphinx-autodoc-typehints nbsphinx \
     elevenlabs google-cloud-texttospeech \
     pytest pytest-xdist \
