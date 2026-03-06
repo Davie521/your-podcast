@@ -1,5 +1,6 @@
 import type { User } from '@/types/auth';
 import type { Episode, EpisodeWithSources, Source } from '@/types/audio';
+import type { CategoriesResponse, InterestsResponse } from '@/types/onboarding';
 import { episodeColor } from '@/lib/format';
 
 // ── Base URL ────────────────────────────────────────────────
@@ -97,6 +98,19 @@ export function devLogin(): Promise<{ ok: boolean }> {
 export function isLocalDev(): boolean {
   if (typeof window === 'undefined') return process.env.NODE_ENV === 'development';
   return isLocalHost(window.location.hostname);
+}
+
+// ── Onboarding helpers ──────────────────────────────────────
+
+export function fetchCategories(signal?: AbortSignal): Promise<CategoriesResponse> {
+  return request<CategoriesResponse>('/api/onboarding/categories', { signal });
+}
+
+export function submitInterests(interests: string[]): Promise<InterestsResponse> {
+  return request<InterestsResponse>('/api/onboarding/interests', {
+    method: 'POST',
+    body: JSON.stringify({ interests }),
+  });
 }
 
 // ── API response types (snake_case from backend) ───────────

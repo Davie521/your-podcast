@@ -11,13 +11,16 @@ import { useAuthDispatch } from '@/hooks/useAuthDispatch';
 function SettingRow({
   label,
   subtitle,
+  onClick,
 }: {
   readonly label: string;
   readonly subtitle?: string;
+  readonly onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex w-full items-center justify-between py-4 border-b border-border-warm tap-feedback"
     >
       <div className="text-left">
@@ -92,7 +95,11 @@ export default function ProfilePage() {
           <h2 className="font-serif font-bold text-[14px] text-black/60 tracking-[1.4px] uppercase mb-4">
             General
           </h2>
-          <SettingRow label="Interests" subtitle="Coming soon" />
+          <SettingRow
+            label="Interests"
+            subtitle={user.interests.length > 0 ? `${user.interests.length} selected` : 'Set your interests'}
+            onClick={() => router.push('/onboarding')}
+          />
           <SettingRow label="Help & FAQ" />
         </section>
 
