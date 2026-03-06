@@ -37,13 +37,18 @@ docs/              # 架构决策文档
 - 服务层: `app/services/`
   - `rss.py` — feedparser 抓取
   - `news.py` — 关键词驱动 RSS 抓取（关键词 → `config/rss_sources.json` 映射 → feed URLs → rss.py）
-  - `gemini.py` — Google Gemini 筛选 + 关键词提取 + AI 标题生成
+  - `llm/` — LLM provider abstraction (article filtering, keyword extraction, title generation)
+    - `base.py` — LLMClient Protocol
+    - `gemini_adapter.py` — Google Gemini adapter
+    - `zhipu_adapter.py` — ZhiPu AI (open.bigmodel.cn) adapter
+    - `prompts.py` — model-independent prompts + JSON parsing
+    - `__init__.py` — `get_llm_client(settings, task)` factory
   - `podcast.py` — Podcastfy 脚本生成
   - `tts.py` — Inworld TTS（默认）/ Google Gemini TTS（备选），双声线 Alex + Jordan
   - `audio.py` — pydub/ffmpeg 合并 MP3
   - `storage.py` — R2 上传（boto3 S3 兼容）
   - `cover.py` — 播客封面生成（Google Imagen，失败时回退渐变色占位图）
-  - `pipeline.py` — 全流程编排，支持双模式：关键词驱动（keywords → 定向 RSS → Gemini 筛选）或传统模式（静态 feeds → 用户兴趣筛选 → 事后提取关键词）
+  - `pipeline.py` — 全流程编排，支持双模式：关键词驱动（keywords → 定向 RSS → LLM 筛选）或传统模式（静态 feeds → 用户兴趣筛选 → 事后提取关键词）
 - CLI: `generate.py` — 手动生成播客；`seed.py` — 填充测试数据；`init_d1.py` — 初始化 D1 表结构
 - 完整 API: `/api/health`, `/api/auth/*`, `/api/episodes`, `/api/episodes/me`, `/api/episodes/{id}`, `/api/generate`, `/api/tasks/{id}`, `/api/onboarding/interests`
 
@@ -144,4 +149,5 @@ cd frontend && vercel         # 前端
 - R2 上传使用 boto3 (S3 兼容)，endpoint 指向 Cloudflare
 - **数据库**：通过 `DATABASE_BACKEND` 环境变量切换。`d1` = Cloudflare D1（生产），`sqlite` = 本地文件（开发）。不设则按 `ENVIRONMENT` 自动选择
 - **数据库迁移**：Alembic 管理 schema 变更。本地用 `alembic upgrade head`（连本地 SQLite），D1 用 `migrate_d1.py upgrade head`（offline SQL → D1 REST API）。CI 会验证迁移一致性（`alembic check`）。首次部署 D1 需先 `migrate_d1.py stamp 0001`
+- **LLM 提供商**：三个任务（文章筛选、关键词提取、标题生成）各有独立环境变量：`LLM_PROVIDER_FILTER`、`LLM_PROVIDER_KEYWORDS`、`LLM_PROVIDER_TITLE`，值为 `"zhipu"`（默认）或 `"gemini"`。ZhiPu 需设 `ZHIPU_API_KEY`，Gemini 需设 `GEMINI_API_KEY`。Podcastfy 和封面生成始终使用 Gemini
 - 前端环境变量：`NEXT_PUBLIC_API_URL` 指向 Railway 后端地址（本地开发默认 `http://localhost:8000`）

@@ -15,7 +15,7 @@ import pytest
 
 from app.config import Settings
 from app.services.rss import Article, fetch_articles, _parse_feed
-from app.services.gemini import filter_articles, generate_keywords, generate_title
+from app.services.llm.prompts import filter_articles, generate_keywords, generate_title
 from app.services.podcast import _parse_transcript, generate_script, ScriptLine
 from app.services.tts import synthesize_lines
 from app.services.audio import merge_audio, _merge
@@ -145,77 +145,59 @@ class TestRSS:
 
 
 # ================================================================
-# Gemini Filtering
+# LLM Filtering (via prompts.py)
 # ================================================================
 
-class TestGemini:
+def _mock_llm_client(return_value: str) -> MagicMock:
+    """Create a mock LLMClient that returns the given string from chat()."""
+    client = MagicMock()
+    client.chat.return_value = return_value
+    return client
+
+
+class TestLLMFilter:
     @pytest.mark.anyio
     async def test_filter_empty_articles(self):
-        result = await filter_articles([], ["AI"], "key")
+        client = _mock_llm_client("[]")
+        result = await filter_articles([], ["AI"], client)
         assert result == []
 
     @pytest.mark.anyio
-    async def test_filter_no_api_key_returns_first_8(self):
-        """Without API key, falls back to first 8 articles."""
-        articles = [_make_article(i) for i in range(12)]
-        result = await filter_articles(articles, ["AI"], api_key="")
-        assert len(result) == 8
-        assert result[0]["title"] == "Article 0"
-
-    @pytest.mark.anyio
-    async def test_filter_gemini_success(self):
-        """Gemini returns selected indices, we get those articles back."""
+    async def test_filter_success(self):
+        """LLM returns selected indices, we get those articles back."""
         articles = [_make_article(i) for i in range(5)]
-
-        mock_response = MagicMock()
-        mock_response.text = "[1, 3]"
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await filter_articles(articles, ["AI"], "fake-key")
+        client = _mock_llm_client("[1, 3]")
+        result = await filter_articles(articles, ["AI"], client)
 
         assert len(result) == 2
         assert result[0]["title"] == "Article 1"
         assert result[1]["title"] == "Article 3"
 
     @pytest.mark.anyio
-    async def test_filter_gemini_with_code_fences(self):
-        """Gemini response wrapped in markdown code fences is parsed correctly."""
+    async def test_filter_with_code_fences(self):
+        """Response wrapped in markdown code fences is parsed correctly."""
         articles = [_make_article(i) for i in range(5)]
-
-        mock_response = MagicMock()
-        mock_response.text = "```json\n[0, 2, 4]\n```"
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await filter_articles(articles, ["AI"], "fake-key")
+        client = _mock_llm_client("```json\n[0, 2, 4]\n```")
+        result = await filter_articles(articles, ["AI"], client)
 
         assert len(result) == 3
 
     @pytest.mark.anyio
-    async def test_filter_gemini_failure_falls_back(self):
-        """On Gemini error, falls back to first 8 articles."""
+    async def test_filter_failure_falls_back(self):
+        """On LLM error, falls back to first 8 articles."""
         articles = [_make_article(i) for i in range(10)]
-
-        with patch("app.services.gemini.genai.Client", side_effect=RuntimeError("API error")):
-            result = await filter_articles(articles, ["AI"], "fake-key")
+        client = MagicMock()
+        client.chat.side_effect = RuntimeError("API error")
+        result = await filter_articles(articles, ["AI"], client)
 
         assert len(result) == 8
 
     @pytest.mark.anyio
-    async def test_filter_gemini_invalid_indices_ignored(self):
-        """Out-of-range indices from Gemini are silently ignored."""
+    async def test_filter_invalid_indices_ignored(self):
+        """Out-of-range indices are silently ignored."""
         articles = [_make_article(i) for i in range(3)]
-
-        mock_response = MagicMock()
-        mock_response.text = "[0, 99, -1, 2]"
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await filter_articles(articles, ["AI"], "fake-key")
+        client = _mock_llm_client("[0, 99, -1, 2]")
+        result = await filter_articles(articles, ["AI"], client)
 
         assert len(result) == 2
         assert result[0]["title"] == "Article 0"
@@ -223,150 +205,109 @@ class TestGemini:
 
 
 # ================================================================
-# Gemini Keywords
+# LLM Keywords
 # ================================================================
 
 class TestGenerateKeywords:
     @pytest.mark.anyio
-    async def test_no_api_key_returns_empty(self):
-        result = await generate_keywords([{"speaker": "Alex", "text": "Hello"}], "")
-        assert result == []
-
-    @pytest.mark.anyio
     async def test_empty_transcript_returns_empty(self):
-        result = await generate_keywords([], "fake-key")
+        client = _mock_llm_client("[]")
+        result = await generate_keywords([], client)
         assert result == []
 
     @pytest.mark.anyio
     async def test_success(self):
-        mock_response = MagicMock()
-        mock_response.text = '["AI", "Gaming", "Privacy"]'
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await generate_keywords(
-                [{"speaker": "Alex", "text": "AI is changing gaming and privacy"}],
-                "fake-key",
-            )
+        client = _mock_llm_client('["AI", "Gaming", "Privacy"]')
+        result = await generate_keywords(
+            [{"speaker": "Alex", "text": "AI is changing gaming and privacy"}],
+            client,
+        )
 
         assert result == ["AI", "Gaming", "Privacy"]
 
     @pytest.mark.anyio
     async def test_code_fence_stripping(self):
-        mock_response = MagicMock()
-        mock_response.text = '```json\n["AI", "Tech"]\n```'
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await generate_keywords(
-                [{"speaker": "Alex", "text": "test"}], "fake-key"
-            )
+        client = _mock_llm_client('```json\n["AI", "Tech"]\n```')
+        result = await generate_keywords(
+            [{"speaker": "Alex", "text": "test"}], client
+        )
 
         assert result == ["AI", "Tech"]
 
     @pytest.mark.anyio
     async def test_failure_returns_empty(self):
-        with patch("app.services.gemini.genai.Client", side_effect=RuntimeError("fail")):
-            result = await generate_keywords(
-                [{"speaker": "Alex", "text": "test"}], "fake-key"
-            )
+        client = MagicMock()
+        client.chat.side_effect = RuntimeError("fail")
+        result = await generate_keywords(
+            [{"speaker": "Alex", "text": "test"}], client
+        )
         assert result == []
 
     @pytest.mark.anyio
     async def test_max_3_keywords(self):
-        mock_response = MagicMock()
-        mock_response.text = '["A", "B", "C", "D", "E"]'
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await generate_keywords(
-                [{"speaker": "Alex", "text": "test"}], "fake-key"
-            )
+        client = _mock_llm_client('["A", "B", "C", "D", "E"]')
+        result = await generate_keywords(
+            [{"speaker": "Alex", "text": "test"}], client
+        )
 
         assert len(result) == 3
 
     @pytest.mark.anyio
     async def test_non_list_json_returns_empty(self):
-        mock_response = MagicMock()
-        mock_response.text = '{"keywords": ["AI"]}'
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await generate_keywords(
-                [{"speaker": "Alex", "text": "test"}], "fake-key"
-            )
+        client = _mock_llm_client('{"keywords": ["AI"]}')
+        result = await generate_keywords(
+            [{"speaker": "Alex", "text": "test"}], client
+        )
 
         assert result == []
 
 
 # ================================================================
-# Gemini Title
+# LLM Title
 # ================================================================
 
 class TestGenerateTitle:
     @pytest.mark.anyio
-    async def test_no_api_key_returns_empty(self):
-        result = await generate_title([{"speaker": "Alex", "text": "Hello"}], "")
-        assert result == ""
-
-    @pytest.mark.anyio
     async def test_empty_transcript_returns_empty(self):
-        result = await generate_title([], "fake-key")
+        client = _mock_llm_client("")
+        result = await generate_title([], client)
         assert result == ""
 
     @pytest.mark.anyio
     async def test_success(self):
-        mock_response = MagicMock()
-        mock_response.text = "AI Revolution: What's Next"
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await generate_title(
-                [{"speaker": "Alex", "text": "AI is changing everything"}],
-                "fake-key",
-            )
+        client = _mock_llm_client("AI Revolution: What's Next")
+        result = await generate_title(
+            [{"speaker": "Alex", "text": "AI is changing everything"}],
+            client,
+        )
 
         assert result == "AI Revolution: What's Next"
 
     @pytest.mark.anyio
     async def test_strips_quotes(self):
-        mock_response = MagicMock()
-        mock_response.text = '"AI Revolution"'
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await generate_title(
-                [{"speaker": "Alex", "text": "test"}], "fake-key"
-            )
+        client = _mock_llm_client('"AI Revolution"')
+        result = await generate_title(
+            [{"speaker": "Alex", "text": "test"}], client
+        )
 
         assert result == "AI Revolution"
 
     @pytest.mark.anyio
     async def test_code_fence_stripping(self):
-        mock_response = MagicMock()
-        mock_response.text = "```\nThe AI Episode\n```"
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_response
-
-        with patch("app.services.gemini.genai.Client", return_value=mock_client):
-            result = await generate_title(
-                [{"speaker": "Alex", "text": "test"}], "fake-key"
-            )
+        client = _mock_llm_client("```\nThe AI Episode\n```")
+        result = await generate_title(
+            [{"speaker": "Alex", "text": "test"}], client
+        )
 
         assert result == "The AI Episode"
 
     @pytest.mark.anyio
     async def test_failure_returns_empty(self):
-        with patch("app.services.gemini.genai.Client", side_effect=RuntimeError("fail")):
-            result = await generate_title(
-                [{"speaker": "Alex", "text": "test"}], "fake-key"
-            )
+        client = MagicMock()
+        client.chat.side_effect = RuntimeError("fail")
+        result = await generate_title(
+            [{"speaker": "Alex", "text": "test"}], client
+        )
         assert result == ""
 
 
@@ -698,7 +639,7 @@ class TestConfig:
             session_secret="x",
         )
         assert s.inworld_tts_voice_male == "Theodore"
-        assert s.inworld_tts_voice_female == "Sarah"
+        assert s.inworld_tts_voice_female == "Kayla"
 
     def test_google_tts_voice_defaults(self):
         s = Settings(

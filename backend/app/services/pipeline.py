@@ -13,7 +13,9 @@ from app.config import Settings
 from app.db import DatabaseClient
 from app.db import queries
 from app.schemas import TaskStatus
-from app.services import audio, cover, gemini, news, podcast, rss, storage, tts
+from app.services import audio, cover, news, podcast, rss, storage, tts
+from app.services.llm import get_llm_client
+from app.services.llm import prompts as llm_prompts
 
 logger = logging.getLogger(__name__)
 
@@ -99,11 +101,12 @@ async def _run_pipeline_inner(
         await _update_task(db, task_id, "failed: no articles", TaskStatus.failed)
         return None
 
-    # Step 2: Filter with Gemini
+    # Step 2: Filter articles with LLM
     await _update_task(db, task_id, "filtering_articles")
-    logger.info("Filtering articles with Gemini...")
+    filter_client = get_llm_client(settings, "filter")
+    logger.info("Filtering articles with %s...", settings.llm_provider_filter)
     filter_interests = keywords if keyword_mode else user["interests"]
-    filtered = await gemini.filter_articles(articles, filter_interests, settings.gemini_api_key)
+    filtered = await llm_prompts.filter_articles(articles, filter_interests, filter_client)
     logger.info("Selected %d articles", len(filtered))
 
     # Step 3: Generate script via Podcastfy
@@ -133,11 +136,13 @@ async def _run_pipeline_inner(
     if keyword_mode:
         logger.info("Using input keywords: %s", keywords)
     else:
-        keywords = await gemini.generate_keywords(script_lines, settings.gemini_api_key)
+        kw_client = get_llm_client(settings, "keywords")
+        keywords = await llm_prompts.generate_keywords(script_lines, kw_client)
         logger.info("Extracted %d keywords from transcript", len(keywords))
 
     # Step 5.6: Generate AI title from transcript
-    ai_title = await gemini.generate_title(script_lines, settings.gemini_api_key)
+    title_client = get_llm_client(settings, "title")
+    ai_title = await llm_prompts.generate_title(script_lines, title_client)
     if ai_title:
         title = ai_title
     else:
