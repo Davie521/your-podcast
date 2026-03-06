@@ -4,21 +4,41 @@ from pydantic import BaseModel, field_validator
 from app.auth import get_current_user
 from app.db import DatabaseClient, get_db
 from app.db import queries
+from app.services.news import get_available_categories
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
-CATEGORIES: tuple[str, ...] = (
-    "Arts & Culture",
-    "Business",
-    "Lifestyle",
-    "Music",
-    "Thought & Ideas",
-)
+# Maps each RSS category (from rss_sources.json) into a UI group.
+# Keys = group names shown in the mind-map UI.
+# Values = list of RSS category names (must match rss_sources.json keys exactly).
+CATEGORY_GROUPS: dict[str, list[str]] = {
+    "Tech": ["Android", "Apple", "Tech", "News"],
+    "Dev": ["Android Development", "iOS Development", "Programming", "Web Development", "UI - UX"],
+    "Entertainment": ["Movies", "Television", "Gaming", "Music", "Funny"],
+    "Sports": ["Sports", "Football", "Cricket", "Tennis"],
+    "Business": ["Business & Economy", "Startups", "Personal finance"],
+    "Lifestyle": ["Beauty", "Fashion", "Food", "Travel", "DIY", "Interior design", "Cars", "Books"],
+    "Knowledge": ["Science", "Space", "History", "Architecture", "Photography"],
+}
 
 
 @router.get("/categories")
 async def get_categories():
-    return {"categories": CATEGORIES}
+    """Return RSS categories grouped for the onboarding mind-map UI.
+
+    Only categories that actually exist in rss_sources.json are returned.
+    """
+    available = set(get_available_categories())
+    groups = [
+        {
+            "group": group,
+            "categories": [c for c in cats if c in available],
+        }
+        for group, cats in CATEGORY_GROUPS.items()
+    ]
+    # Drop groups with no valid categories
+    groups = [g for g in groups if g["categories"]]
+    return {"groups": groups}
 
 
 class InterestsBody(BaseModel):
