@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     inworld_api_key: str = ""
     inworld_tts_model: str = "inworld-tts-1.5-max"
     inworld_tts_voice_male: str = "Theodore"
-    inworld_tts_voice_female: str = "Sarah"
+    inworld_tts_voice_female: str = "Kayla"
 
     # Environment: "development" or "production"
     environment: str = "development"

@@ -498,6 +498,10 @@ class TestAudio:
         combined.__len__ = lambda self: 8000
         combined.export = MagicMock()
 
+        # Mock for re-reading the exported MP3 to get accurate duration
+        exported = MagicMock()
+        exported.__len__ = lambda self: 8000
+
         with patch("app.services.audio.AudioSegment") as MockAudioSegment:
             empty = MagicMock()
             empty.__add__ = MagicMock(return_value=combined)
@@ -505,7 +509,8 @@ class TestAudio:
             combined.__iadd__ = MagicMock(return_value=combined)
 
             MockAudioSegment.empty.return_value = empty
-            MockAudioSegment.from_file.side_effect = [seg1, seg2]
+            # seg1, seg2 for input files; exported for re-reading the MP3
+            MockAudioSegment.from_file.side_effect = [seg1, seg2, exported]
 
             path, duration = _merge([Path("/tmp/a.wav"), Path("/tmp/b.wav")])
 
@@ -698,7 +703,7 @@ class TestConfig:
             session_secret="x",
         )
         assert s.inworld_tts_voice_male == "Theodore"
-        assert s.inworld_tts_voice_female == "Sarah"
+        assert s.inworld_tts_voice_female == "Kayla"
 
     def test_google_tts_voice_defaults(self):
         s = Settings(

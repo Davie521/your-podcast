@@ -32,7 +32,12 @@ def _merge(audio_files: list[Path]) -> tuple[Path, int]:
         out_path = Path(tempfile.mktemp(suffix=".mp3", prefix="podcast_"))
 
     combined.export(str(out_path), format="mp3")
-    duration_seconds = int(len(combined) / 1000)
+
+    # Re-read the exported MP3 to get accurate duration — WAV headers written
+    # by the TTS step may have incorrect sample-rate metadata, so len(combined)
+    # can be wrong.  The MP3 file itself always has correct timing.
+    exported = AudioSegment.from_file(str(out_path), format="mp3")
+    duration_seconds = int(len(exported) / 1000)
 
     logger.info("Merged %d segments → %s (%ds)", len(audio_files), out_path, duration_seconds)
     return out_path, duration_seconds

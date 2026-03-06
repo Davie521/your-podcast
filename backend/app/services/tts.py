@@ -105,7 +105,7 @@ _INWORLD_MAX_CHARS = 2000
 
 
 def _inworld_request(text: str, voice: str, model: str, api_key: str) -> bytes:
-    """Single Inworld TTS request; returns raw PCM bytes."""
+    """Single Inworld TTS request; returns MP3 bytes."""
     import base64
 
     resp = httpx.post(
@@ -148,13 +148,13 @@ def _synthesize_inworld(
     concatenates the resulting PCM data into a single WAV file.
     """
     voice = voice_map.get(line["speaker"], voice_map["Alex"])
-    tmp = Path(tempfile.mktemp(suffix=".wav", prefix=f"tts_{index:03d}_"))
+    tmp = Path(tempfile.mktemp(suffix=".mp3", prefix=f"tts_{index:03d}_"))
     chunks = _split_text(line["text"], _INWORLD_MAX_CHARS)
 
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
-            pcm_parts = [_inworld_request(chunk, voice, model, api_key) for chunk in chunks]
-            _write_wav(b"".join(pcm_parts), tmp)
+            mp3_parts = [_inworld_request(chunk, voice, model, api_key) for chunk in chunks]
+            tmp.write_bytes(b"".join(mp3_parts))
             logger.debug("Inworld TTS line %d done (%d chunk(s), attempt %d)", index, len(chunks), attempt)
             return tmp
         except Exception as e:
