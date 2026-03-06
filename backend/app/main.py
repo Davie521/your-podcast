@@ -33,7 +33,13 @@ app = FastAPI(title="Your Podcast API", lifespan=lifespan)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # SessionMiddleware is required by authlib for OAuth state storage
-app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+# https_only=True ensures the Secure flag is set in production (behind proxy,
+# Starlette sees HTTP and would otherwise omit it, causing browsers to drop the cookie).
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.session_secret,
+    https_only=not settings.is_dev,
+)
 
 origins = [
     "http://localhost:3000",
