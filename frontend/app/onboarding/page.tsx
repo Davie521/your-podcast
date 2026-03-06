@@ -565,8 +565,8 @@ function OnboardingContent() {
                     method: 'POST',
                     body: JSON.stringify({ interests: [...selected] }),
                   });
-                } catch {
-                  // Continue even if saving fails (user may not be logged in)
+                } catch (err) {
+                  console.warn('Failed to save interests:', err);
                 }
               }
               router.push('/explore');
