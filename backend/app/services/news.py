@@ -54,7 +54,7 @@ async def fetch_articles_by_keywords(keywords: list[str]) -> list[Article]:
     Each keyword is matched to a category in rss_sources.json.
     At most 5 feeds per category are used to keep fetch time reasonable.
     Feed URLs are deduplicated across keywords before fetching.
-    Article filtering/selection is left to Gemini in the pipeline.
+    Article filtering/selection is left to the LLM provider in the pipeline.
     """
     sources = _load_sources()
 

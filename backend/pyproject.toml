@@ -16,6 +16,7 @@ dependencies = [
     # Services (lightweight)
     "feedparser>=6.0",
     "google-genai>=1.0",
+    "zhipuai>=2.0",
     "boto3>=1.35",
     "pydub>=0.25",
     # Utilities

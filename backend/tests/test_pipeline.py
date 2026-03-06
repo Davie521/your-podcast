@@ -20,6 +20,7 @@ def _test_settings(**overrides) -> Settings:
         d1_database_id="test",
         session_secret="test",
         gemini_api_key="fake-gemini",
+        zhipu_api_key="fake-zhipu",
         r2_account_id="fake-account",
         r2_access_key_id="fake-key",
         r2_secret_access_key="fake-secret",
@@ -84,7 +85,8 @@ async def test_pipeline_script_generation_fails(db):
 
     with (
         patch("app.services.pipeline.rss.fetch_articles", new_callable=AsyncMock, return_value=articles),
-        patch("app.services.pipeline.gemini.filter_articles", new_callable=AsyncMock, return_value=articles),
+        patch("app.services.pipeline.get_llm_client", return_value=MagicMock()),
+        patch("app.services.pipeline.llm_prompts.filter_articles", new_callable=AsyncMock, return_value=articles),
         patch("app.services.pipeline.podcast.generate_script", new_callable=AsyncMock, return_value=[]),
     ):
         result = await run_pipeline(
@@ -120,12 +122,13 @@ async def test_pipeline_full_success(db):
 
     with (
         patch("app.services.pipeline.rss.fetch_articles", new_callable=AsyncMock, return_value=articles),
-        patch("app.services.pipeline.gemini.filter_articles", new_callable=AsyncMock, return_value=articles),
+        patch("app.services.pipeline.get_llm_client", return_value=MagicMock()),
+        patch("app.services.pipeline.llm_prompts.filter_articles", new_callable=AsyncMock, return_value=articles),
         patch("app.services.pipeline.podcast.generate_script", new_callable=AsyncMock, return_value=script_lines),
         patch("app.services.pipeline.tts.synthesize_lines", new_callable=AsyncMock, return_value=[Path("/tmp/a.wav"), Path("/tmp/b.wav")]),
         patch("app.services.pipeline.audio.merge_audio", new_callable=AsyncMock, return_value=(Path("/tmp/out.mp3"), 120)),
-        patch("app.services.pipeline.gemini.generate_keywords", new_callable=AsyncMock, return_value=["AI", "Tech"]),
-        patch("app.services.pipeline.gemini.generate_title", new_callable=AsyncMock, return_value="AI & Tech: What's Next"),
+        patch("app.services.pipeline.llm_prompts.generate_keywords", new_callable=AsyncMock, return_value=["AI", "Tech"]),
+        patch("app.services.pipeline.llm_prompts.generate_title", new_callable=AsyncMock, return_value="AI & Tech: What's Next"),
         patch("app.services.pipeline.cover.generate_cover", new_callable=AsyncMock, return_value=None),
         patch("app.services.pipeline.storage.upload_to_r2", new_callable=AsyncMock, return_value="https://cdn.example.com/ep.mp3"),
     ):
@@ -181,12 +184,13 @@ async def test_pipeline_title_fallback(db):
 
     with (
         patch("app.services.pipeline.rss.fetch_articles", new_callable=AsyncMock, return_value=articles),
-        patch("app.services.pipeline.gemini.filter_articles", new_callable=AsyncMock, return_value=articles),
+        patch("app.services.pipeline.get_llm_client", return_value=MagicMock()),
+        patch("app.services.pipeline.llm_prompts.filter_articles", new_callable=AsyncMock, return_value=articles),
         patch("app.services.pipeline.podcast.generate_script", new_callable=AsyncMock, return_value=script_lines),
         patch("app.services.pipeline.tts.synthesize_lines", new_callable=AsyncMock, return_value=[Path("/tmp/a.wav")]),
         patch("app.services.pipeline.audio.merge_audio", new_callable=AsyncMock, return_value=(Path("/tmp/out.mp3"), 60)),
-        patch("app.services.pipeline.gemini.generate_keywords", new_callable=AsyncMock, return_value=[]),
-        patch("app.services.pipeline.gemini.generate_title", new_callable=AsyncMock, return_value=""),
+        patch("app.services.pipeline.llm_prompts.generate_keywords", new_callable=AsyncMock, return_value=[]),
+        patch("app.services.pipeline.llm_prompts.generate_title", new_callable=AsyncMock, return_value=""),
         patch("app.services.pipeline.cover.generate_cover", new_callable=AsyncMock, return_value=None),
         patch("app.services.pipeline.storage.upload_to_r2", new_callable=AsyncMock, return_value="https://cdn.example.com/ep.mp3"),
     ):
@@ -215,12 +219,13 @@ async def test_pipeline_dry_run_skips_upload(db):
 
     with (
         patch("app.services.pipeline.rss.fetch_articles", new_callable=AsyncMock, return_value=articles),
-        patch("app.services.pipeline.gemini.filter_articles", new_callable=AsyncMock, return_value=articles),
+        patch("app.services.pipeline.get_llm_client", return_value=MagicMock()),
+        patch("app.services.pipeline.llm_prompts.filter_articles", new_callable=AsyncMock, return_value=articles),
         patch("app.services.pipeline.podcast.generate_script", new_callable=AsyncMock, return_value=script_lines),
         patch("app.services.pipeline.tts.synthesize_lines", new_callable=AsyncMock, return_value=[Path("/tmp/a.wav")]),
         patch("app.services.pipeline.audio.merge_audio", new_callable=AsyncMock, return_value=(Path("/tmp/out.mp3"), 60)),
-        patch("app.services.pipeline.gemini.generate_keywords", new_callable=AsyncMock, return_value=["AI"]),
-        patch("app.services.pipeline.gemini.generate_title", new_callable=AsyncMock, return_value="Test Title"),
+        patch("app.services.pipeline.llm_prompts.generate_keywords", new_callable=AsyncMock, return_value=["AI"]),
+        patch("app.services.pipeline.llm_prompts.generate_title", new_callable=AsyncMock, return_value="Test Title"),
         patch("app.services.pipeline.cover.generate_cover", new_callable=AsyncMock, return_value=None),
         patch("app.services.pipeline.storage.upload_to_r2", new_callable=AsyncMock) as mock_upload,
     ):
