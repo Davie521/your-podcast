@@ -24,26 +24,72 @@ function groupsToCategories(groups: readonly CategoryGroup[]): ReadonlyArray<Cat
 
 interface BubblePos { readonly size: number; readonly left: number; readonly top: number; readonly cx: number; readonly cy: number; }
 
-function generateDefaultPositions(count: number): ReadonlyArray<BubblePos> {
-  if (count === 0) return [];
-  const CANVAS_W = 384;
-  // Arrange in 2-3 columns, centered
-  const cols = count <= 4 ? 2 : 3;
-  const rows = Math.ceil(count / cols);
-  const size = count <= 4 ? 150 : count <= 6 ? 130 : 120;
-  const gapX = (CANVAS_W - cols * size) / (cols + 1);
-  const gapY = size * 0.3;
-  const positions: BubblePos[] = [];
-  for (let i = 0; i < count; i++) {
-    const row = Math.floor(i / cols);
-    const col = i % cols;
-    const itemsInRow = Math.min(cols, count - row * cols);
-    const rowOffset = (cols - itemsInRow) * (size + gapX) / 2;
-    const left = gapX + col * (size + gapX) + rowOffset;
-    const top = row * (size + gapY);
-    positions.push({ size, left, top, cx: left + size / 2, cy: top + size / 2 });
+/** Bubble size just big enough to wrap the label text */
+function labelBubbleSize(label: string): number {
+  const len = label.length;
+  if (len <= 3) return 72;
+  if (len <= 5) return 82;
+  if (len <= 7) return 95;
+  if (len <= 9) return 108;
+  return 125; // "Entertainment" etc.
+}
+
+/** Pack categories into organic layout using circle-packing with varied sizes */
+function generateDefaultPositions(cats: ReadonlyArray<Category>): ReadonlyArray<BubblePos> {
+  if (cats.length === 0) return [];
+  const W = 384;
+  const H = 448;
+  const GAP = 8;
+  const items = cats.map((c) => ({ id: c.id, size: labelBubbleSize(c.label) }));
+
+  // Simple greedy circle-packing: place each circle tangent to existing ones, closest to center
+  const placed: Array<{ x: number; y: number; r: number }> = [];
+  const cx = W / 2, cy = H / 2 - 20;
+
+  for (const item of items) {
+    const r = item.size / 2;
+    if (placed.length === 0) {
+      placed.push({ x: cx, y: cy, r });
+      continue;
+    }
+    let bestX = cx, bestY = cy, bestDist = Infinity;
+    for (const c of placed) {
+      const touchDist = c.r + r + GAP;
+      for (let a = 0; a < 60; a++) {
+        const angle = (a / 60) * Math.PI * 2 - Math.PI / 2;
+        const tx = c.x + Math.cos(angle) * touchDist;
+        const ty = c.y + Math.sin(angle) * touchDist;
+        if (tx - r < 4 || tx + r > W - 4 || ty - r < 4 || ty + r > H - 4) continue;
+        let free = true;
+        for (const o of placed) {
+          const dx = tx - o.x, dy = ty - o.y;
+          if (Math.sqrt(dx * dx + dy * dy) < o.r + r + GAP) { free = false; break; }
+        }
+        if (!free) continue;
+        const dist = Math.sqrt((tx - cx) ** 2 + (ty - cy) ** 2);
+        if (dist < bestDist) { bestDist = dist; bestX = tx; bestY = ty; }
+      }
+    }
+    placed.push({ x: bestX, y: bestY, r });
   }
-  return positions;
+
+  // Center the cluster
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of placed) {
+    minX = Math.min(minX, p.x - p.r); maxX = Math.max(maxX, p.x + p.r);
+    minY = Math.min(minY, p.y - p.r); maxY = Math.max(maxY, p.y + p.r);
+  }
+  const shiftX = cx - (minX + maxX) / 2;
+  const shiftY = cy - (minY + maxY) / 2;
+  for (const p of placed) { p.x += shiftX; p.y += shiftY; }
+
+  return placed.map((p, i) => ({
+    size: items[i].size,
+    left: p.x - p.r,
+    top: p.y - p.r,
+    cx: p.x,
+    cy: p.y,
+  }));
 }
 
 const CANVAS_W = 384;
@@ -213,7 +259,7 @@ export default function OnboardingPage() {
   const burstOrigins = useRef(new Map<string, { cx: number; cy: number }>());
   const prevLayout = useRef(new Map<string, { cx: number; cy: number }>());
 
-  const defaultPositions = useMemo(() => generateDefaultPositions(categories.length), [categories.length]);
+  const defaultPositions = useMemo(() => generateDefaultPositions(categories), [categories]);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
