@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     llm_provider_keywords: str = "zhipu"
     llm_provider_title: str = "zhipu"
 
+    # LLM model names (configurable per provider)
+    zhipu_model: str = "glm-5"
+    gemini_model: str = "gemini-2.5-flash"
+
     # Google Vertex AI (for image generation)
     vertex_project_id: str = ""
     vertex_location: str = "us-central1"

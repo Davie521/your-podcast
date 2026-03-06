@@ -31,11 +31,14 @@ def _strip_code_fences(text: str) -> str:
 # -- Filter articles ----------------------------------------------------------
 
 async def filter_articles(
-    articles: list[Article], interests: list[str], client: LLMClient
+    articles: list[Article], interests: list[str], client: LLMClient | None
 ) -> list[Article]:
     """Pick the most relevant articles for the user's interests."""
     if not articles:
         return []
+    if client is None:
+        logger.warning("No LLM client, returning first %d articles", _MAX_ARTICLES)
+        return articles[:_MAX_ARTICLES]
 
     try:
         return await asyncio.to_thread(_filter_articles_sync, articles, interests, client)
@@ -74,10 +77,10 @@ def _filter_articles_sync(
 # -- Generate keywords --------------------------------------------------------
 
 async def generate_keywords(
-    transcript_lines: list[dict], client: LLMClient
+    transcript_lines: list[dict], client: LLMClient | None
 ) -> list[str]:
     """Extract 3 broad topic keywords from the transcript."""
-    if not transcript_lines:
+    if not transcript_lines or client is None:
         return []
 
     try:
@@ -111,10 +114,10 @@ def _generate_keywords_sync(
 # -- Generate title ------------------------------------------------------------
 
 async def generate_title(
-    transcript_lines: list[dict], client: LLMClient
+    transcript_lines: list[dict], client: LLMClient | None
 ) -> str:
     """Generate a catchy podcast episode title from the transcript."""
-    if not transcript_lines:
+    if not transcript_lines or client is None:
         return ""
 
     try:

@@ -155,6 +155,31 @@ def _mock_llm_client(return_value: str) -> MagicMock:
     return client
 
 
+class TestLLMAdapters:
+    def test_zhipu_client_importable(self):
+        """ZhipuClient can be imported from the llm package."""
+        from app.services.llm import ZhipuClient
+        assert ZhipuClient is not None
+
+    def test_gemini_client_importable(self):
+        """GeminiClient can be imported from the llm package."""
+        from app.services.llm import GeminiClient
+        assert GeminiClient is not None
+
+    def test_get_llm_client_missing_key_returns_none(self):
+        """get_llm_client returns None when API key is missing."""
+        from app.services.llm import get_llm_client
+        settings = _test_settings(llm_provider_filter="zhipu", zhipu_api_key="")
+        assert get_llm_client(settings, "filter") is None
+
+    @pytest.mark.anyio
+    async def test_filter_no_client_falls_back(self):
+        """filter_articles with None client returns first N articles."""
+        articles = [_make_article(i) for i in range(10)]
+        result = await filter_articles(articles, ["AI"], None)
+        assert len(result) == 8
+
+
 class TestLLMFilter:
     @pytest.mark.anyio
     async def test_filter_empty_articles(self):
