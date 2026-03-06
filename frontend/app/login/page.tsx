@@ -11,7 +11,7 @@ const ease = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const { login } = useAuthDispatch();
   const [devLoading, setDevLoading] = useState(false);
   const [devError, setDevError] = useState('');
@@ -24,9 +24,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/explore');
+      if (user && user.interests.length === 0) {
+        router.replace('/onboarding');
+      } else {
+        router.replace('/explore');
+      }
     }
-  }, [status, router]);
+  }, [status, user, router]);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -187,7 +191,8 @@ export default function LoginPage() {
                   setDevError('');
                   try {
                     await devLogin();
-                    window.location.href = '/explore';
+                    // Full reload so AuthContext re-fetches user and checks interests
+                    window.location.href = '/';
                   } catch (err) {
                     setDevError(err instanceof Error ? err.message : 'Dev login failed — is the backend running?');
                     setDevLoading(false);

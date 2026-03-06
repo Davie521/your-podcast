@@ -2,53 +2,49 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiError, request } from '@/lib/api';
+import { ApiError, fetchCategories, submitInterests } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthDispatch } from '@/hooks/useAuthDispatch';
-import type { InterestsResponse } from '@/types/onboarding';
+import type { CategoryGroup } from '@/types/onboarding';
 
-/* ── Data ── */
+/* ── Data mapping ── */
 
 interface SubInterest { readonly id: string; readonly label: string; }
 interface Category { readonly id: string; readonly label: string; readonly subs: ReadonlyArray<SubInterest>; }
 
-const CATEGORIES: ReadonlyArray<Category> = [
-  { id: 'arts', label: 'Arts & Culture', subs: [
-    { id: 'film', label: 'Film' }, { id: 'theater', label: 'Theater' },
-    { id: 'literature', label: 'Literature' }, { id: 'art', label: 'Art' },
-    { id: 'photography', label: 'Photography' },
-  ]},
-  { id: 'lifestyle', label: 'Lifestyle', subs: [
-    { id: 'travel', label: 'Travel' }, { id: 'food', label: 'Food' },
-    { id: 'fashion', label: 'Fashion' }, { id: 'wellness', label: 'Wellness' },
-    { id: 'home', label: 'Home' },
-  ]},
-  { id: 'ideas', label: 'Thought & Ideas', subs: [
-    { id: 'philosophy', label: 'Philosophy' }, { id: 'science', label: 'Science' },
-    { id: 'technology', label: 'Technology' }, { id: 'psychology', label: 'Psychology' },
-  ]},
-  { id: 'music', label: 'Music', subs: [
-    { id: 'pop', label: 'Pop' }, { id: 'rock', label: 'Rock' },
-    { id: 'jazz', label: 'Jazz' }, { id: 'classical', label: 'Classical' },
-    { id: 'electronic', label: 'Electronic' },
-  ]},
-  { id: 'business', label: 'Business', subs: [
-    { id: 'startups', label: 'Startups' }, { id: 'finance', label: 'Finance' },
-    { id: 'economy', label: 'Economy' }, { id: 'marketing', label: 'Marketing' },
-  ]},
-];
+function groupsToCategories(groups: readonly CategoryGroup[]): ReadonlyArray<Category> {
+  return groups.map((g) => ({
+    id: g.group.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    label: g.group,
+    subs: g.categories.map((c) => ({ id: c, label: c })),
+  }));
+}
 
 /* ── Layout ── */
 
 interface BubblePos { readonly size: number; readonly left: number; readonly top: number; readonly cx: number; readonly cy: number; }
 
-const DEFAULT_POS: ReadonlyArray<BubblePos> = [
-  { size: 150, left: 40, top: 0, cx: 115, cy: 75 },
-  { size: 130, left: 214, top: 10, cx: 279, cy: 75 },
-  { size: 120, left: 55, top: 179, cx: 115, cy: 239 },
-  { size: 130, left: 199, top: 174, cx: 264, cy: 239 },
-  { size: 120, left: 132, top: 308, cx: 192, cy: 368 },
-];
+function generateDefaultPositions(count: number): ReadonlyArray<BubblePos> {
+  if (count === 0) return [];
+  const CANVAS_W = 384;
+  // Arrange in 2-3 columns, centered
+  const cols = count <= 4 ? 2 : 3;
+  const rows = Math.ceil(count / cols);
+  const size = count <= 4 ? 150 : count <= 6 ? 130 : 120;
+  const gapX = (CANVAS_W - cols * size) / (cols + 1);
+  const gapY = size * 0.3;
+  const positions: BubblePos[] = [];
+  for (let i = 0; i < count; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const itemsInRow = Math.min(cols, count - row * cols);
+    const rowOffset = (cols - itemsInRow) * (size + gapX) / 2;
+    const left = gapX + col * (size + gapX) + rowOffset;
+    const top = row * (size + gapY);
+    positions.push({ size, left, top, cx: left + size / 2, cy: top + size / 2 });
+  }
+  return positions;
+}
 
 const CANVAS_W = 384;
 const CANVAS_H = 448;
@@ -170,9 +166,8 @@ function packBubbles(
         const minDist = a.r + b.r + PACK_GAP;
         if (dist < minDist) {
           anyOverlap = true;
-          const overlap = (minDist - dist) * 0.6; /* damped push to avoid oscillation */
+          const overlap = (minDist - dist) * 0.6;
           const nx = dx / dist, ny = dy / dist;
-          /* Both items move; pinned items move less (20%) */
           const aWeight = a.isPinned ? 0.2 : 1;
           const bWeight = b.isPinned ? 0.2 : 1;
           const total = aWeight + bWeight;
@@ -183,7 +178,6 @@ function packBubbles(
         }
       }
     }
-    /* Clamp every item to canvas after each iteration */
     for (const p of placed) clampToCanvas(p);
     if (!anyOverlap) break;
   }
@@ -198,11 +192,16 @@ function packBubbles(
 
 /* ── Component ── */
 
+const MAX_INTERESTS = 10;
+
 export default function OnboardingPage() {
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const { refreshUser } = useAuthDispatch();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [categories, setCategories] = useState<ReadonlyArray<Category>>([]);
+  const [selected, setSelected] = useState<Set<string>>(() =>
+    new Set(user?.interests ?? []),
+  );
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set());
   const [burstSet, setBurstSet] = useState<Set<string>>(new Set());
   const [crackingSet, setCrackingSet] = useState<Set<string>>(new Set());
@@ -211,14 +210,27 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const collapseTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const crackTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  /* Burst origins: center position of category when it was tapped */
   const burstOrigins = useRef(new Map<string, { cx: number; cy: number }>());
-  /* Previous layout: used for incremental packing so existing bubbles don't jump */
   const prevLayout = useRef(new Map<string, { cx: number; cy: number }>());
+
+  const defaultPositions = useMemo(() => generateDefaultPositions(categories.length), [categories.length]);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
   }, [status, router]);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    const controller = new AbortController();
+    fetchCategories(controller.signal)
+      .then((data) => setCategories(groupsToCategories(data.groups)))
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError('Failed to load categories');
+        }
+      });
+    return () => controller.abort();
+  }, [status]);
 
   /* Cleanup all timers on unmount */
   useEffect(() => {
@@ -232,10 +244,9 @@ export default function OnboardingPage() {
 
   const isPackedMode = expandedSet.size > 0;
 
-  /* Build pack items: unexpanded cats are large, expanded subs are small */
   const packItems = useMemo((): PackItem[] => {
     const items: PackItem[] = [];
-    for (const cat of CATEGORIES) {
+    for (const cat of categories) {
       if (expandedSet.has(cat.id)) {
         for (const sub of cat.subs) items.push({ id: sub.id, size: SUB_SIZE });
       } else {
@@ -243,45 +254,41 @@ export default function OnboardingPage() {
       }
     }
     return items;
-  }, [expandedSet]);
+  }, [categories, expandedSet]);
 
-  /* Packed layout: mixed-size circle-packed, incremental */
   const packedPositions = useMemo(() => {
     if (!isPackedMode) {
       prevLayout.current.clear();
       return null;
     }
-    /* Filter prevLayout to only include ids still present in packItems */
     const currentIds = new Set(packItems.map(it => it.id));
     const pinned = new Map<string, { cx: number; cy: number }>();
     for (const [id, pos] of prevLayout.current) {
       if (currentIds.has(id)) pinned.set(id, pos);
     }
 
-    /* First expand: seed pinned positions from DEFAULT_POS so categories don't scatter */
     if (pinned.size === 0) {
-      CATEGORIES.forEach((cat, i) => {
-        if (currentIds.has(cat.id)) {
-          pinned.set(cat.id, { cx: DEFAULT_POS[i].cx, cy: DEFAULT_POS[i].cy });
+      categories.forEach((cat, i) => {
+        if (currentIds.has(cat.id) && defaultPositions[i]) {
+          pinned.set(cat.id, { cx: defaultPositions[i].cx, cy: defaultPositions[i].cy });
         }
       });
     }
 
     const result = packBubbles(packItems, pinned, CANVAS_W / 2, CANVAS_H / 2 - 10);
 
-    /* Update prevLayout for next incremental pack */
     prevLayout.current.clear();
     for (const [id, pos] of result) {
       prevLayout.current.set(id, { cx: pos.left + pos.size / 2, cy: pos.top + pos.size / 2 });
     }
 
     return result;
-  }, [isPackedMode, packItems]);
+  }, [isPackedMode, packItems, categories, defaultPositions]);
 
   const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       const n = new Set(prev);
-      if (n.has(id)) { n.delete(id); } else if (n.size < 10) { n.add(id); }
+      if (n.has(id)) { n.delete(id); } else if (n.size < MAX_INTERESTS) { n.add(id); }
       return n;
     });
     setBouncingId(id);
@@ -294,10 +301,9 @@ export default function OnboardingPage() {
     const ek = crackTimers.current.get(catId);
     if (ek) { clearTimeout(ek); crackTimers.current.delete(catId); }
 
-    const idx = CATEGORIES.findIndex((c) => c.id === catId);
+    const idx = categories.findIndex((c) => c.id === catId);
 
     if (expandedSet.has(catId)) {
-      /* ── Collapse ── */
       setBurstSet((prev) => { const n = new Set(prev); n.delete(catId); return n; });
       const timer = setTimeout(() => {
         setExpandedSet((prev) => { const n = new Set(prev); n.delete(catId); return n; });
@@ -305,9 +311,9 @@ export default function OnboardingPage() {
       }, 500);
       collapseTimers.current.set(catId, timer);
     } else {
-      /* ── Expand: save origin → pulse → crack → burst ── */
       const packPos = packedPositions?.get(catId);
-      const dp = DEFAULT_POS[idx];
+      const dp = defaultPositions[idx];
+      if (!dp) return;
       const catSize = packPos?.size ?? dp.size;
       burstOrigins.current.set(catId, {
         cx: isPackedMode && packPos ? packPos.left + catSize / 2 : dp.cx,
@@ -335,10 +341,7 @@ export default function OnboardingPage() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await request<InterestsResponse>('/api/onboarding/interests', {
-        method: 'POST',
-        body: JSON.stringify({ interests: [...selected] }),
-      });
+      await submitInterests([...selected]);
       await refreshUser();
       router.push('/explore');
     } catch (err) {
@@ -364,28 +367,24 @@ export default function OnboardingPage() {
 
       {/* Bubble canvas */}
       <div className="relative w-full max-w-[384px] h-[448px] mx-auto mt-4 overflow-hidden">
-        {/* Category bubbles — always rendered */}
-        {CATEGORIES.map((cat, i) => {
-          const dp = DEFAULT_POS[i];
+        {categories.map((cat, i) => {
+          const dp = defaultPositions[i];
+          if (!dp) return null;
           const isExp = expandedSet.has(cat.id);
           const isCracking = crackingSet.has(cat.id);
           const packPos = packedPositions?.get(cat.id);
           const count = cat.subs.filter((s) => selected.has(s.id)).length;
 
-          /* Position: packed when in packed mode, otherwise default */
           const targetLeft = isPackedMode && packPos ? packPos.left : dp.left;
           const targetTop = isPackedMode && packPos ? packPos.top : dp.top;
           const targetSize = isPackedMode && packPos ? packPos.size : dp.size;
 
-          /* When expanded, freeze at burst origin so it shrinks in place */
           const origin = burstOrigins.current.get(cat.id);
           const expLeft = origin ? origin.cx - targetSize / 2 : targetLeft;
           const expTop = origin ? origin.cy - targetSize / 2 : targetTop;
 
           return (
             <div key={cat.id}>
-              {/* Crack ripple */}
-              {/* Ripple rings + scatter particles on pop */}
               {isExp && origin && (
                 <>
                   <div className="absolute rounded-full pointer-events-none" style={{
@@ -400,7 +399,6 @@ export default function OnboardingPage() {
                     border: '1px solid rgba(17,17,17,0.06)',
                     animation: `bubble-crack-ripple-2 0.6s 0.06s ${EASE} forwards`, zIndex: 5,
                   }} />
-                  {/* Scatter particles */}
                   {[0, 1, 2, 3, 4, 5].map((p) => {
                     const a = (p / 6) * Math.PI * 2;
                     const d = targetSize * 0.6;
@@ -449,10 +447,10 @@ export default function OnboardingPage() {
           );
         })}
 
-        {/* Sub-interest bubbles — same size & style as categories */}
-        {CATEGORIES.map((cat, catIdx) => {
+        {categories.map((cat, catIdx) => {
           if (!expandedSet.has(cat.id)) return null;
-          const origin = burstOrigins.current.get(cat.id) ?? DEFAULT_POS[catIdx];
+          const origin = burstOrigins.current.get(cat.id) ?? defaultPositions[catIdx];
+          if (!origin) return null;
           const originCx = origin.cx;
           const originCy = origin.cy;
           const isBurst = burstSet.has(cat.id);
