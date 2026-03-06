@@ -131,11 +131,8 @@ const ALL_NODES: FlatNode[] = INITIAL_GROUPS.flatMap(g => [
 ]);
 
 // Physics and Layout Constants
-const BASE_BUBBLE_SIZE = 96;
 const L2_SCALE = 0.85;
 const PADDING = 8;
-const MIN_RADIUS = 35;
-const MAX_RADIUS = 75;
 
 function calculateNodeRadius(node: FlatNode): number {
   if (node.type === 'group') {
@@ -147,6 +144,18 @@ function calculateNodeRadius(node: FlatNode): number {
   // Ensure categories have enough minimum space for wrapping
   const r = Math.min(120, Math.max(65, estimatedWidth / 2));
   return r * L2_SCALE;
+}
+
+interface PhysicsNode extends FlatNode {
+  x: number;
+  y: number;
+  r: number;
+  vx: number;
+  vy: number;
+  renderRadius: number;
+  isDocked?: boolean;
+  targetX?: number;
+  targetY?: number;
 }
 
 // Compute radii once
@@ -270,14 +279,14 @@ function OnboardingContent() {
     const map = new Map<string, { x: number, y: number, scale: number, renderRadius?: number }>();
 
     // 1. Define active (visible) nodes based on expanded state
-    const activeNodes: (FlatNode & { x: number, y: number, r: number, vx: number, vy: number })[] = [];
+    const activeNodes: PhysicsNode[] = [];
 
     if (!expandedGroup) {
       // Show only groups — use evenly spaced angles for deterministic initial positions
       INITIAL_GROUPS.forEach((g, i) => {
         const angle = (i / INITIAL_GROUPS.length) * Math.PI * 2;
         const renderRadius = NODE_RADII.get(g.id)!;
-        activeNodes.push({ ...g, type: 'group', groupId: g.id, x: Math.cos(angle), y: Math.sin(angle), r: renderRadius + PADDING, vx: 0, vy: 0, renderRadius } as any);
+        activeNodes.push({ ...g, type: 'group', groupId: g.id, x: Math.cos(angle), y: Math.sin(angle), r: renderRadius + PADDING, vx: 0, vy: 0, renderRadius });
       });
     } else {
       // Show expanded group, its categories, and other groups
@@ -285,12 +294,12 @@ function OnboardingContent() {
       const others = INITIAL_GROUPS.filter(g => g.id !== expandedGroup);
 
       const renderRadiusGroup = NODE_RADII.get(expanded.id)! * 1.5;
-      activeNodes.push({ ...expanded, type: 'group', groupId: expanded.id, x: 0, y: 0, r: renderRadiusGroup + PADDING, vx: 0, vy: 0, renderRadius: renderRadiusGroup } as any);
+      activeNodes.push({ ...expanded, type: 'group', groupId: expanded.id, x: 0, y: 0, r: renderRadiusGroup + PADDING, vx: 0, vy: 0, renderRadius: renderRadiusGroup });
 
       expanded.categories.forEach((cat, i) => {
         const angle = (i / expanded.categories.length) * Math.PI * 2;
         const renderRadiusCat = NODE_RADII.get(cat.id)! * 1.35;
-        activeNodes.push({ ...cat, type: 'category', groupId: expanded.id, emoji: expanded.emoji, x: Math.cos(angle) * 5, y: Math.sin(angle) * 5, r: renderRadiusCat + PADDING, vx: 0, vy: 0, renderRadius: renderRadiusCat } as any);
+        activeNodes.push({ ...cat, type: 'category', groupId: expanded.id, emoji: expanded.emoji, x: Math.cos(angle) * 5, y: Math.sin(angle) * 5, r: renderRadiusCat + PADDING, vx: 0, vy: 0, renderRadius: renderRadiusCat });
       });
 
       others.forEach((g, i) => {
@@ -317,9 +326,11 @@ function OnboardingContent() {
           r: renderRadiusOther + PADDING,
           vx: 0,
           vy: 0,
-          // Custom properties for docking
-          ...({ isDocked: true, targetX, targetY, renderRadius: renderRadiusOther } as any)
-        } as any);
+          isDocked: true,
+          targetX,
+          targetY,
+          renderRadius: renderRadiusOther,
+        });
       });
     }
 
@@ -334,10 +345,10 @@ function OnboardingContent() {
           // Lock the expanded group to the absolute center
           node.x = 0;
           node.y = 0;
-        } else if ((node as any).isDocked) {
+        } else if (node.isDocked) {
           // Docked groups attract to their specific bottom positions
-          node.x += ((node as any).targetX - node.x) * 0.15;
-          node.y += ((node as any).targetY - node.y) * 0.15;
+          node.x += (node.targetX! - node.x) * 0.15;
+          node.y += (node.targetY! - node.y) * 0.15;
         } else {
           // Categories attract to the central group
           node.x -= node.x * centerAttraction;
@@ -384,7 +395,7 @@ function OnboardingContent() {
 
     // 3. Map back to layout map with scale 1
     activeNodes.forEach(node => {
-      map.set(node.id, { x: node.x, y: node.y, scale: 1, renderRadius: (node as any).renderRadius });
+      map.set(node.id, { x: node.x, y: node.y, scale: 1, renderRadius: node.renderRadius });
     });
 
     // 4. Default non-active nodes to center/parent with scale 0
