@@ -21,8 +21,6 @@ RUN .venv/bin/pip uninstall -y \
     elevenlabs google-cloud-texttospeech \
     pytest pytest-xdist \
     wheel setuptools 2>/dev/null; \
-    # Keep playwright Python package (podcastfy imports it) but remove the 125MB driver
-    rm -rf .venv/lib/python*/site-packages/playwright/driver 2>/dev/null; \
     find .venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; \
     find .venv -type d -name "tests" -exec rm -rf {} + 2>/dev/null; \
     find .venv -type d -name "test" -exec rm -rf {} + 2>/dev/null; \
