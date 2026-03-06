@@ -25,8 +25,10 @@ dependencies = [
     # Schema & migrations
     "sqlalchemy>=2.0",
     "alembic>=1.13",
-    # Podcast generation (--no-deps in Docker; only needed subdeps installed)
+    # Podcast generation
     "podcastfy>=0.3",
+    # podcastfy imports playwright at module level but doesn't declare it
+    "playwright>=1.40",
 ]
 
 [project.optional-dependencies]
