@@ -37,7 +37,7 @@ export default function ShowsPage() {
   const [progressText, setProgressText] = useState('');
   const { currentEpisode, isPlaying } = useAudioState();
   const { toggle, play } = useAudioDispatch();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const router = useRouter();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -82,7 +82,7 @@ export default function ShowsPage() {
     setGenerateState('starting');
     setProgressText('Starting...');
 
-    generateEpisode()
+    generateEpisode(user?.interests)
       .then((res) => {
         setGenerateState('generating');
         pollRef.current = setInterval(() => {

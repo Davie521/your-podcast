@@ -211,10 +211,10 @@ interface TaskResponse {
   episode_id: string | null;
 }
 
-export async function generateEpisode(): Promise<GenerateResponse> {
+export async function generateEpisode(keywords?: readonly string[]): Promise<GenerateResponse> {
   return request<GenerateResponse>('/api/generate', {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify(keywords?.length ? { keywords } : {}),
   });
 }
 
