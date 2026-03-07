@@ -77,6 +77,14 @@ async def upsert_user(
     }
 
 
+async def list_daily_generation_users(db: DatabaseClient) -> list[dict]:
+    """Return all users with daily_generation enabled."""
+    rows = await db.execute("SELECT * FROM user WHERE daily_generation = 1")
+    for row in rows:
+        row["interests"] = json.loads(row["interests"]) if row["interests"] else []
+    return rows
+
+
 async def update_user_interests(db: DatabaseClient, user_id: str, interests: list[str]) -> None:
     await db.execute(
         "UPDATE user SET interests = ? WHERE id = ?",

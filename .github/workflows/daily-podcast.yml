@@ -8,7 +8,7 @@ on:
 
 jobs:
   generate:
-    name: Generate Daily Episode
+    name: Generate Daily Episodes (All Users)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,7 +32,7 @@ jobs:
       - name: Install Playwright browsers
         run: uv run playwright install --with-deps chromium
 
-      - name: Generate podcast
+      - name: Generate podcasts for all users
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -46,4 +46,8 @@ jobs:
           RSS_FEEDS: ${{ secrets.RSS_FEEDS }}
           TTS_PROVIDER: ${{ secrets.TTS_PROVIDER }}
           INWORLD_API_KEY: ${{ secrets.INWORLD_API_KEY }}
-        run: uv run python generate.py
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          LLM_PROVIDER_FILTER: ${{ secrets.LLM_PROVIDER_FILTER }}
+          LLM_PROVIDER_KEYWORDS: ${{ secrets.LLM_PROVIDER_KEYWORDS }}
+          LLM_PROVIDER_TITLE: ${{ secrets.LLM_PROVIDER_TITLE }}
+        run: uv run python generate_all.py
