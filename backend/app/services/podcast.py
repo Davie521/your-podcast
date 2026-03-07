@@ -36,7 +36,7 @@ _CONVERSATION_CONFIG = {
         "Conclusion",
     ],
     "podcast_name": "Your Podcast",
-    "podcast_tagline": "Your daily tech podcast",
+    "podcast_tagline": "Your daily podcast",
     "output_language": "English",
     "engagement_techniques": [
         "rhetorical questions",
