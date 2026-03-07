@@ -27,6 +27,7 @@ user = Table(
     Column("provider", Text, nullable=False),
     Column("provider_id", Text, nullable=False),
     Column("interests", Text, nullable=False, server_default="[]"),
+    Column("daily_generation", Integer, nullable=False, server_default="1"),
     Column("created_at", Text, nullable=False),
     Index("idx_user_email", "email"),
 )

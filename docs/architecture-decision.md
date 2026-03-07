@@ -128,7 +128,7 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 
 ```
 ┌─ 定时触发 ──────────────────────────────────────────────────┐
-│  GitHub Actions (cron 每天)  或  Railway 内 APScheduler      │
+│  GitHub Actions (cron daily) → generate_all.py                │
 └─────────────────────┬──────────────────────────────────────-┘
                       ▼
 ┌─ Railway (欧洲节点) ───────────────────────────────────────-┐
@@ -173,7 +173,7 @@ GitHub Actions 生成 → 静态 JSON + MP3 → 静态托管
 | 音频处理 | ffmpeg (pydub) | 拼接语音片段为 MP3 |
 | 文件存储 | Cloudflare R2 | 免费 10GB，全球 CDN，S3 兼容 |
 | 数据库 | Cloudflare D1 | SQLite 兼容，托管在 Cloudflare 边缘，与 R2 同生态 |
-| 定时任务 | GitHub Actions cron | 免费 2000 分钟/月 |
+| 定时任务 | GitHub Actions cron (`generate_all.py`) | Free 2000 min/month, per-user generation |
 
 ## 费用预估
 
