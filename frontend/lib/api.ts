@@ -196,6 +196,34 @@ export async function fetchMyEpisodes(limit = 20, offset = 0): Promise<EpisodeLi
   return { episodes: data.episodes.map(toEpisode), total: data.total };
 }
 
+// ── Generate helpers ────────────────────────────────────────
+
+interface GenerateResponse {
+  task_id: string;
+  status: string;
+  message: string;
+}
+
+interface TaskResponse {
+  task_id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: string;
+  episode_id: string | null;
+}
+
+export async function generateEpisode(): Promise<GenerateResponse> {
+  return request<GenerateResponse>('/api/generate', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export async function fetchTaskStatus(taskId: string): Promise<TaskResponse> {
+  return request<TaskResponse>(`/api/tasks/${taskId}`);
+}
+
+// ── Episode detail ──────────────────────────────────────────
+
 export async function fetchEpisodeDetail(id: string): Promise<EpisodeWithSources> {
   const data = await request<ApiEpisodeDetail>(`/api/episodes/${id}`);
   return toEpisodeWithSources(data);
