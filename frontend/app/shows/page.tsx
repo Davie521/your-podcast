@@ -134,43 +134,44 @@ export default function ShowsPage() {
     <div className="min-h-screen bg-cream">
       <main className={`mx-auto w-full max-w-[428px] px-6 pt-6 ${hasPlayer ? 'pb-36' : 'pb-24'}`}>
         {/* Header */}
-        <div className="flex flex-col gap-3 mb-6 animate-fade-in">
-          <h1 className="font-serif text-4xl leading-10 text-[#111]">Daily Podcast</h1>
-          <p className="font-serif italic text-[14px] text-[#666] leading-5 opacity-70">
-            AI-generated podcasts based on your interests
-          </p>
-        </div>
-
-        {/* Generate Button */}
-        {loadState === 'loaded' && (
-          <div className="mb-8 animate-fade-in">
+        <div className="flex items-start justify-between mb-10 animate-fade-in">
+          <div className="flex flex-col gap-3">
+            <h1 className="font-serif text-4xl leading-10 text-[#111]">Daily Podcast</h1>
+            <p className="font-serif italic text-[14px] text-[#666] leading-5 opacity-70">
+              AI-generated podcasts based on your interests
+            </p>
+          </div>
+          {loadState === 'loaded' && (
             <button
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating || generateState === 'done'}
-              className={`w-full rounded-xl py-3 px-4 font-inter text-sm font-medium transition-all duration-200 ${
+              aria-label="Generate new podcast"
+              className={`shrink-0 mt-1 size-10 rounded-full flex items-center justify-center transition-all duration-200 ${
                 isGenerating
-                  ? 'bg-[#e5e5e0] text-[#999] cursor-not-allowed'
+                  ? 'bg-[#e5e5e0] cursor-not-allowed'
                   : generateState === 'done'
-                    ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                    ? 'bg-green-100 cursor-not-allowed'
                     : generateState === 'error'
-                      ? 'bg-red-50 text-red-600 hover:bg-red-100 active:scale-[0.98]'
-                      : 'bg-[#111] text-white hover:bg-[#333] active:scale-[0.98]'
+                      ? 'bg-red-50 hover:bg-red-100 active:scale-90'
+                      : 'bg-[#111] hover:bg-[#333] active:scale-90'
               }`}
             >
-              {isGenerating && (
-                <span className="inline-block mr-2 size-3.5 border-2 border-[#999] border-t-transparent rounded-full animate-spin align-middle" />
+              {isGenerating ? (
+                <span className="size-4 border-2 border-[#999] border-t-transparent rounded-full animate-spin" />
+              ) : generateState === 'done' ? (
+                <svg className="size-5 text-green-700" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+              ) : (
+                <svg className={`size-5 ${generateState === 'error' ? 'text-red-600' : 'text-white'}`} viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
               )}
-              {generateState === 'idle' && 'Generate New Podcast'}
-              {generateState === 'starting' && 'Starting...'}
-              {generateState === 'generating' && (progressText || 'Generating...')}
-              {generateState === 'done' && 'Done!'}
-              {generateState === 'error' && 'Try Again'}
             </button>
-            {generateState === 'error' && progressText && (
-              <p className="mt-2 font-inter text-xs text-red-500 text-center">{progressText}</p>
-            )}
-          </div>
+          )}
+        </div>
+        {isGenerating && progressText && (
+          <p className="font-inter text-xs text-[#999] text-center -mt-6 mb-6 animate-fade-in">{progressText}</p>
+        )}
+        {generateState === 'error' && progressText && (
+          <p className="font-inter text-xs text-red-500 text-center -mt-6 mb-6 animate-fade-in">{progressText}</p>
         )}
 
         {/* Content */}
