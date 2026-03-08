@@ -24,8 +24,8 @@ logging.basicConfig(
 logger = logging.getLogger("generate_all")
 
 # Available Inworld voices — verify against your Inworld plan
-INWORLD_VOICES_MALE = ["Theodore", "Adam", "Antonio", "Guy", "Nathaniel", "River"]
-INWORLD_VOICES_FEMALE = ["Kayla", "Lily", "Bella", "Eva", "Kira", "Charlotte"]
+INWORLD_VOICES_MALE = ["Theodore", "Simon", "Alex", "Shaun", "Elliot"]
+INWORLD_VOICES_FEMALE = ["Kayla", "Lauren", "Olivia", "Jessica"]
 
 DEFAULT_INTERESTS = ["technology", "internet", "AI", "programming"]
 
