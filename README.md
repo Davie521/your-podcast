@@ -1,199 +1,183 @@
 # Your Podcast 🎙️
 
-> 一条命令，把今天的科技新闻变成一期双人中文播客。
+[![CI](https://github.com/Davie521/your-podcast/actions/workflows/ci.yml/badge.svg)](https://github.com/Davie521/your-podcast/actions/workflows/ci.yml)
 
-每天自动抓取 RSS → AI 筛选 → Podcastfy 写稿 → GLM 语音合成 → Web 播放。
+> **[中文文档](README.zh-CN.md)**
 
-## MVP 范围
+Auto-generate a daily Chinese tech podcast with one command.
 
-**做：**
-- 抓取 RSS，Gemini 筛选文章，Podcastfy 生成对话脚本，GLM TTS 合成语音，输出 MP3
-- 一个能播放和浏览往期的 Web 页面
+RSS feeds → Gemini AI filtering → Podcastfy dialogue script → TTS synthesis → MP3 → Web player.
 
-**不做（后续迭代）：**
-- 用户系统 / 登录
-- 自定义 RSS 源
-- 多语言
-- 定时任务 / Telegram 推送
+## Features
 
-## 架构
+- **Personalized onboarding** — select interests via interactive bubble UI, get podcasts tailored to you
+- **Dual generation modes** — keyword-driven (targeted RSS) or traditional (static feeds + interest filtering)
+- **AI-powered pipeline** — Gemini selects articles, generates dialogue scripts and cover art
+- **Dual-voice TTS** — Inworld (default) or Google Gemini TTS with male + female voices
+- **Full web player** — explore page, personal shows, episode details with full-screen and mini player
+- **OAuth login** — Google and GitHub authentication
+
+## Architecture
 
 ```
-GitHub Actions (每天定时触发)
+GitHub Actions (daily cron)
          ↓
-┌─ Railway (FastAPI) ────────────────────────────────┐
-│  RSS 抓取 → Gemini 筛选 → Podcastfy 脚本 → GLM TTS │
-│       ↓                                     ↓      │
-│    SQLite (元信息)              ffmpeg 合并 MP3     │
-│                                      ↓             │
-│                               上传到 R2 存储        │
-│                                                    │
-│  REST API: /api/episodes, /api/generate ...        │
-└────────────────────────────────────────────────────┘
+┌─ Railway (FastAPI) ─────────────────────────────────────┐
+│  RSS fetch → Gemini filter → Podcastfy script → TTS     │
+│       ↓                                       ↓         │
+│  Cloudflare D1 (metadata)         ffmpeg merge → MP3    │
+│                                        ↓                │
+│                                  Upload to R2            │
+│                                                         │
+│  REST API: /api/episodes, /api/generate, /api/auth ...  │
+└─────────────────────────────────────────────────────────┘
          ↓                          ↓
-  Cloudflare R2 (MP3 CDN)    Vercel (Next.js 前端)
-                                 - 播客播放器
-                                 - 往期浏览
-                                 - 调用 FastAPI
+  Cloudflare R2 (MP3 CDN)    Vercel (Next.js frontend)
+                                 - Podcast player
+                                 - Browse episodes
+                                 - OAuth login
 ```
 
-## 技术栈
+## Tech Stack
 
-| 层 | 选型 | 说明 |
-|----|------|------|
-| 云平台 | [Railway](https://railway.com) | 后端部署，欧洲节点，容器无超时 |
-| 前端 | [Next.js](https://nextjs.org) + [Vercel](https://vercel.com) | 播客播放 & 往期浏览 |
-| 后端 | FastAPI | REST API + 播客生成服务 |
-| RSS | feedparser | 抓取科技/AI 领域源 |
-| 筛选 | Google Gemini | 从全部文章挑 8-10 篇 |
-| 脚本 | [Podcastfy](https://github.com/souzatharsis/podcastfy) | 生成双主持人对话脚本 |
-| TTS | GLM (智谱) | 逐句合成，小明(男声) + 小红(女声) |
-| 音频 | ffmpeg (pydub) | 拼接语音片段为 MP3 |
-| 存储 | [Cloudflare R2](https://www.cloudflare.com/r2/) | 免费 10GB，全球 CDN |
-| 数据库 | SQLite + Litestream | 零运维，自动备份到 R2 |
-| 定时 | GitHub Actions cron | 免费 2000 分钟/月 |
+| Layer | Choice | Notes |
+|-------|--------|-------|
+| Frontend | [Next.js 16](https://nextjs.org) + [Vercel](https://vercel.com) | TypeScript, Tailwind CSS, static export |
+| Backend | [FastAPI](https://fastapi.tiangolo.com) + [Railway](https://railway.com) | Async Python, Pydantic models |
+| Database | [Cloudflare D1](https://developers.cloudflare.com/d1/) | SQLite-compatible edge database (dev: local SQLite) |
+| Storage | [Cloudflare R2](https://www.cloudflare.com/r2/) | S3-compatible, free 10GB, global CDN |
+| RSS | feedparser | Tech/AI feed aggregation |
+| AI Filter | Google Gemini | Article selection + keyword extraction + title generation |
+| Script | [Podcastfy](https://github.com/souzatharsis/podcastfy) | Dual-host dialogue generation |
+| TTS | Inworld / Google Gemini | Sentence-level synthesis, dual voices |
+| Audio | ffmpeg (pydub) | Merge voice clips into MP3 |
+| Cover Art | Google Imagen | AI-generated covers (gradient fallback) |
+| Auth | Google + GitHub OAuth | Session-based authentication |
+| CI/CD | GitHub Actions | Lint, build, migration checks |
+| Cron | GitHub Actions | Daily podcast generation |
 
-> 架构决策详情见 [docs/architecture-decision.md](docs/architecture-decision.md)
-
-## 项目结构
+## Project Structure
 
 ```
 podcast-app/
-├── frontend/                   # Next.js (Vercel 部署)
+├── frontend/                 # Next.js → Vercel
 │   ├── app/
-│   │   ├── page.tsx            # 首页 / 播放器
-│   │   └── archive/
-│   │       └── page.tsx        # 往期列表
-│   ├── components/
-│   │   ├── Player.tsx          # 播放器组件
-│   │   └── EpisodeList.tsx     # 节目列表组件
-│   ├── package.json
-│   └── next.config.ts
-├── backend/                    # FastAPI (Railway 部署)
+│   │   ├── explore/          # Discover page (public)
+│   │   ├── shows/            # Personal shows (auth required)
+│   │   ├── episode/[id]/     # Episode detail + player
+│   │   ├── onboarding/       # Interest selection
+│   │   ├── login/            # OAuth login
+│   │   ├── profile/          # User profile
+│   │   └── help/             # Help page
+│   ├── components/           # BottomNav, MiniPlayer, NowPlaying, ...
+│   ├── contexts/             # AudioContext, AuthContext
+│   └── hooks/                # useAuth, useAudioState, ...
+├── backend/                  # FastAPI → Railway
 │   ├── app/
-│   │   ├── main.py             # FastAPI 入口
-│   │   ├── config.py           # 环境变量配置
-│   │   ├── models.py           # SQLite 模型 (SQLModel)
-│   │   └── services/
-│   │       ├── rss.py          # RSS 抓取
-│   │       ├── gemini.py       # Gemini 筛选
-│   │       ├── podcast.py      # Podcastfy 脚本生成
-│   │       ├── tts.py          # GLM TTS 合成
-│   │       ├── audio.py        # ffmpeg 合并
-│   │       └── storage.py      # R2 上传
-│   ├── generate.py             # CLI 入口: python generate.py
-│   ├── pyproject.toml          # uv 项目配置
-│   └── Dockerfile
-├── docs/
-│   └── architecture-decision.md
-└── .github/
-    └── workflows/
-        └── daily.yml           # 每天定时生成
+│   │   ├── main.py           # FastAPI entrypoint
+│   │   ├── config.py         # Environment config
+│   │   ├── db/               # Database layer (D1 + SQLite)
+│   │   ├── routers/          # auth, episodes, generate, tasks, onboarding
+│   │   └── services/         # rss, gemini, podcast, tts, audio, storage, cover
+│   ├── alembic/              # Database migrations
+│   ├── generate.py           # CLI: manual podcast generation
+│   └── config/               # rss_sources.json (keyword → feed mapping)
+├── docs/                     # Architecture decisions & plans
+└── .github/workflows/        # CI + daily cron
 ```
 
 ## Quick Start
 
-### 本地开发
+### Prerequisites
+
+- Python 3.11+ with [uv](https://docs.astral.sh/uv/)
+- Node.js 18+
+- ffmpeg
+
+### Local Development
 
 ```bash
-# 后端
+# Backend
 cd backend
-cp .env.example .env   # 填入 GEMINI_API_KEY, GLM_API_KEY, R2 配置
+cp .env.example .env   # Fill in API keys
 uv sync
 uv run uvicorn app.main:app --reload
 # → http://localhost:8000/api/health
 
-# 前端（另开终端）
+# Frontend (separate terminal)
 cd frontend
 npm install
 npm run dev
 # → http://localhost:3000
 ```
 
-### 部署
+### Generate a Podcast
 
-**后端 → Railway:**
-1. 注册 [Railway](https://railway.com)，安装 CLI: `npm i -g @railway/cli`
-2. ```bash
-   cd backend
-   railway login
-   railway up
-   ```
-3. 在 Railway Dashboard 设置环境变量（参考 `backend/.env.example`）
-4. 记录后端 URL（如 `https://xxx.up.railway.app`）
+```bash
+cd backend
 
-**前端 → Vercel:**
-1. 注册 [Vercel](https://vercel.com)，安装 CLI: `npm i -g vercel`
-2. ```bash
-   cd frontend
-   vercel
-   ```
-3. 设置环境变量 `NEXT_PUBLIC_API_URL` 为 Railway 后端 URL
+# Traditional mode (static feeds)
+uv run python generate.py
+
+# Keyword-driven mode (targeted RSS)
+uv run python generate.py --keywords AI,Science
+```
+
+### Database Migrations
+
+```bash
+cd backend
+
+# Local SQLite
+uv run alembic upgrade head
+
+# Cloudflare D1 (requires env vars)
+uv run python migrate_d1.py upgrade head
+
+# Create new migration (after editing app/db/tables.py)
+uv run alembic revision --autogenerate -m "description"
+```
+
+## Deployment
+
+**Backend → Railway:**
+1. Install Railway CLI: `npm i -g @railway/cli`
+2. `cd backend && railway login && railway up`
+3. Set environment variables in Railway Dashboard (see `backend/.env.example`)
+
+**Frontend → Vercel:**
+1. Install Vercel CLI: `npm i -g vercel`
+2. `cd frontend && vercel`
+3. Set `NEXT_PUBLIC_API_URL` to your Railway backend URL
 
 ## CI/CD
 
-| 事件 | 发生什么 |
+| Event | Action |
+|-------|--------|
+| PR to main | CI checks (lint / build / migration) + Vercel Preview |
+| Merge to main | Vercel Production deploy + Railway auto-rebuild |
+
+> See [docs/cicd-overview.md](docs/cicd-overview.md) for details.
+
+## Cost
+
+| Item | Monthly |
 |------|---------|
-| PR 到 main | CI 检查（lint/build/import）+ Vercel Preview 部署 |
-| 合并到 main | Vercel Production 部署 + Railway 自动重新构建 |
+| Railway (backend) | ~$0 (Hobby tier includes $5 credit) |
+| Vercel (frontend) | $0 (Hobby free) |
+| Cloudflare R2 + D1 | $0 (within free tier) |
+| Gemini API | $0 (free tier) |
+| TTS | ~¥10-30 |
+| **Total** | **~¥10-30/mo** |
 
-> 详见 [docs/cicd-overview.md](docs/cicd-overview.md)
+## Contributing
 
-## 费用
+1. Create a branch from `main` (`git checkout -b feature/xxx`)
+2. Develop and commit on your branch
+3. Open a Pull Request to `main` (include `Closes #issue` to link issues)
+4. Merge after CI passes
 
-| 项目 | 月费 |
-|------|------|
-| Railway (后端) | ~$0（Hobby 含 $5 免费额度） |
-| Vercel (前端) | $0（Hobby 免费） |
-| Cloudflare R2 | $0（10GB 内免费） |
-| Gemini API | $0（免费额度） |
-| GLM TTS | ~¥10-30 |
-| **合计** | **~¥10-30/月** |
-
-## 协作工具
-
-| 工具 | 用途 |
-|------|------|
-| **[Notion](https://notion.so)** | 产品文档、需求整理、会议记录 |
-| **微信** | 日常沟通、快速讨论 |
-| **[GitHub Repo](https://github.com/Davie521/your-podcast)** | 代码管理、Issue 任务追踪、Code Review |
-
-### 用 GitHub Issues 管理任务
-
-我们用 GitHub Issues 来拆分和追踪开发任务，好处是任务和代码在同一个地方，方便关联。
-
-**基本用法：**
-
-1. **创建 Issue** — 每个待办任务创建一个 Issue，写清楚要做什么
-2. **打 Label** — 用标签分类，比如 `feature`（新功能）、`bug`（缺陷）、`backend`、`frontend`
-3. **指派 Assignee** — 把 Issue 分配给负责人
-4. **关联 PR** — 提交代码时在 PR 里写 `Closes #123`，合并后自动关闭 Issue
-
-**工作流程：**
-
-```
-1. 在 Issue 中讨论需求 / 任务
-2. 认领 Issue，开新分支开发
-3. 开发完成，提 PR 并关联 Issue（Closes #xx）
-4. Code Review 通过后合并
-5. Issue 自动关闭
-```
-
-**常用命令：**
-
-```bash
-# 查看所有 Issue
-gh issue list
-
-# 创建新 Issue
-gh issue create --title "实现 RSS 抓取服务" --label "feature,backend"
-
-# 查看某个 Issue
-gh issue view 1
-
-# 关闭 Issue
-gh issue close 1
-```
+> **Never push directly to `main`.** All changes go through PRs.
 
 ## License
 
