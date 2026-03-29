@@ -83,9 +83,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_session_secret(self) -> "Settings":
-        if not self.session_secret:
+        if not self.is_dev and not self.session_secret:
             raise ValueError(
-                "SESSION_SECRET must be set. "
+                "SESSION_SECRET must be set in production. "
                 "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
             )
         return self

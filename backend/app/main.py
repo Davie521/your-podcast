@@ -18,12 +18,18 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize the shared DB client once at startup (no lazy-init race)
+    # Initialize the shared DB client at startup (no lazy-init race).
+    # Tolerate init failure so health check still works in CI/staging
+    # where DB credentials may not be available.
     from app.db.client import init_db
-    db = init_db()
+    db = None
+    try:
+        db = init_db()
+    except Exception:
+        logger.warning("DB init failed at startup — endpoints requiring DB will error", exc_info=True)
     yield
-    # Close the shared DB client
-    await db.aclose()
+    if db is not None:
+        await db.aclose()
 
 
 app = FastAPI(title="Your Podcast API", lifespan=lifespan)
