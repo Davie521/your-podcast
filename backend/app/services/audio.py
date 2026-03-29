@@ -29,7 +29,9 @@ def _merge(audio_files: list[Path]) -> tuple[Path, int]:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         out_path = Path.cwd() / f"podcast_{ts}.mp3"
     else:
-        out_path = Path(tempfile.mktemp(suffix=".mp3", prefix="podcast_"))
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".mp3", prefix="podcast_", delete=False)
+        tmp_file.close()
+        out_path = Path(tmp_file.name)
 
     combined.export(str(out_path), format="mp3")
 

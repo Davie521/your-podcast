@@ -1,13 +1,17 @@
+import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.auth import get_current_user
 from app.config import Settings, get_settings
 from app.db import DatabaseClient, create_db_client, get_db
 from app.db import queries
 from app.schemas import TaskResponse, TaskStatus
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_MAX_FEEDS = 20
 
 DEFAULT_FEEDS = [
     "https://feeds.arstechnica.com/arstechnica/index",
@@ -24,6 +28,28 @@ class GenerateRequest(BaseModel):
     date: str | None = None
     voice_male: str | None = None
     voice_female: str | None = None
+
+    @field_validator("date")
+    @classmethod
+    def validate_date(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not _DATE_RE.match(v):
+            raise ValueError("date must be in YYYY-MM-DD format")
+        datetime.strptime(v, "%Y-%m-%d")
+        return v
+
+    @field_validator("feeds")
+    @classmethod
+    def validate_feeds(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return v
+        if len(v) > _MAX_FEEDS:
+            raise ValueError(f"feeds must contain at most {_MAX_FEEDS} URLs")
+        for url in v:
+            if not url.startswith(("http://", "https://")):
+                raise ValueError(f"feed URL must be http/https: {url!r}")
+        return v
 
 
 class GenerateResponse(BaseModel):
@@ -82,7 +108,7 @@ def _apply_voice_overrides(
     voice_female: str | None,
 ) -> Settings:
     """Return a copy of settings with voice names overridden."""
-    overrides: dict = {}
+    overrides: dict[str, str] = {}
     if settings.tts_provider == "inworld":
         if voice_male:
             overrides["inworld_tts_voice_male"] = voice_male

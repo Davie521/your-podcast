@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
 
     # Session
-    session_secret: str = "change-me"
+    session_secret: str = ""
     frontend_url: str = "http://localhost:3000"
 
     # Google Gemini
@@ -79,6 +79,15 @@ class Settings(BaseSettings):
     def _default_database_backend(self) -> "Settings":
         if not self.database_backend:
             self.database_backend = "sqlite" if self.is_dev else "d1"
+        return self
+
+    @model_validator(mode="after")
+    def _validate_session_secret(self) -> "Settings":
+        if not self.is_dev and not self.session_secret:
+            raise ValueError(
+                "SESSION_SECRET must be set in production. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+            )
         return self
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}

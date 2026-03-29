@@ -88,16 +88,25 @@ def _generate_transcript(text: str, api_key: str) -> str | None:
     """Call Podcastfy to generate a transcript file (sync, run via to_thread)."""
     try:
         import os
-        os.environ["GEMINI_API_KEY"] = api_key
 
         from podcastfy.client import generate_podcast
 
-        result = generate_podcast(
-            text=text,
-            transcript_only=True,
-            conversation_config=_CONVERSATION_CONFIG,
-            llm_model_name="gemini-2.5-flash-lite",
-        )
+        # Use a per-call env copy to avoid mutating the global os.environ
+        # (race condition when concurrent threads write different keys).
+        old_key = os.environ.get("GEMINI_API_KEY")
+        os.environ["GEMINI_API_KEY"] = api_key
+        try:
+            result = generate_podcast(
+                text=text,
+                transcript_only=True,
+                conversation_config=_CONVERSATION_CONFIG,
+                llm_model_name="gemini-2.5-flash-lite",
+            )
+        finally:
+            if old_key is None:
+                os.environ.pop("GEMINI_API_KEY", None)
+            else:
+                os.environ["GEMINI_API_KEY"] = old_key
         if result:
             ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             original_stem = Path(result).stem  # e.g. "transcript_abc123"

@@ -185,7 +185,7 @@ async def create_task(
                VALUES (?, ?, ?, ?, NULL, ?)""",
             [task_id, user_id, status, progress, now],
         )
-    except (RuntimeError, Exception) as exc:
+    except Exception as exc:
         if "UNIQUE constraint" in str(exc) or "idx_task_one_active_per_user" in str(exc):
             raise ValueError("active task exists") from exc
         raise
@@ -204,6 +204,9 @@ async def get_task_by_id(db: DatabaseClient, task_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
+_TASK_UPDATE_ALLOWED_COLS = frozenset({"status", "progress", "episode_id"})
+
+
 async def update_task(
     db: DatabaseClient,
     task_id: str,
@@ -212,21 +215,22 @@ async def update_task(
     progress: str | None = None,
     episode_id: str | None = None,
 ) -> None:
-    parts: list[str] = []
-    params: list = []
+    updates: dict[str, str] = {}
     if status is not None:
-        parts.append("status = ?")
-        params.append(status)
+        updates["status"] = status
     if progress is not None:
-        parts.append("progress = ?")
-        params.append(progress)
+        updates["progress"] = progress
     if episode_id is not None:
-        parts.append("episode_id = ?")
-        params.append(episode_id)
-    if not parts:
+        updates["episode_id"] = episode_id
+    if not updates:
         return
-    params.append(task_id)
-    await db.execute(f"UPDATE task SET {', '.join(parts)} WHERE id = ?", params)
+    for col in updates:
+        if col not in _TASK_UPDATE_ALLOWED_COLS:
+            raise ValueError(f"Invalid column for task update: {col!r}")
+    set_clause = ", ".join(f"{col} = ?" for col in updates)
+    params: list[str] = [*updates.values(), task_id]
+    sql = f"UPDATE task SET {set_clause} WHERE id = ?"  # noqa: S608 — columns validated against allowlist
+    await db.execute(sql, params)
 
 
 async def get_active_task(db: DatabaseClient, user_id: str) -> dict | None:
