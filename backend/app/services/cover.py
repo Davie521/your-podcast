@@ -32,7 +32,7 @@ _GRADIENTS = [
 
 def generate_cover_url(title: str) -> str:
     """Generate a deterministic placeholder cover URL based on episode title."""
-    digest = hashlib.md5(title.encode()).hexdigest()
+    digest = hashlib.md5(title.encode(), usedforsecurity=False).hexdigest()
     idx = int(digest, 16) % len(_GRADIENTS)
     bg, fg = _GRADIENTS[idx]
 
@@ -90,9 +90,8 @@ async def generate_cover(
 
         for part in response.candidates[0].content.parts:
             if part.inline_data:
-                tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-                tmp.write(part.inline_data.data)
-                tmp.close()
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                    tmp.write(part.inline_data.data)
                 logger.info("Generated cover image: %s", tmp.name)
                 return Path(tmp.name)
 

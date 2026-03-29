@@ -8,6 +8,7 @@ Keywords are matched to categories via case-insensitive lookup.
 
 import json
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 from app.services.rss import Article, fetch_articles
@@ -15,16 +16,14 @@ from app.services.rss import Article, fetch_articles
 logger = logging.getLogger(__name__)
 
 _CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "rss_sources.json"
-_sources_cache: dict[str, list[dict]] | None = None
 
 
+@lru_cache(maxsize=1)
 def _load_sources() -> dict[str, list[dict]]:
-    global _sources_cache
-    if _sources_cache is None:
-        with open(_CONFIG_PATH) as f:
-            _sources_cache = json.load(f)
-        logger.info("Loaded RSS sources config: %d categories", len(_sources_cache))
-    return _sources_cache
+    with open(_CONFIG_PATH) as f:
+        data = json.load(f)
+    logger.info("Loaded RSS sources config: %d categories", len(data))
+    return data
 
 
 def get_available_categories() -> list[str]:

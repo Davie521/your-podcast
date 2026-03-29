@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
@@ -19,11 +18,12 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize the shared DB client once at startup (no lazy-init race)
+    from app.db.client import init_db
+    db = init_db()
     yield
-    # Close the shared DB client if it was created
-    import app.db.client as db_module
-    if db_module._db_client is not None:
-        await db_module._db_client.aclose()
+    # Close the shared DB client
+    await db.aclose()
 
 
 app = FastAPI(title="Your Podcast API", lifespan=lifespan)

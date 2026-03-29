@@ -67,7 +67,9 @@ def _synthesize_google(
     from google.genai import types
 
     voice = voice_map.get(line["speaker"], voice_map["Alex"])
-    tmp = Path(tempfile.mktemp(suffix=".wav", prefix=f"tts_{index:03d}_"))
+    tmp_file = tempfile.NamedTemporaryFile(suffix=".wav", prefix=f"tts_{index:03d}_", delete=False)
+    tmp_file.close()
+    tmp = Path(tmp_file.name)
     client = genai.Client(api_key=api_key)
 
     for attempt in range(1, _MAX_RETRIES + 1):
@@ -148,7 +150,9 @@ def _synthesize_inworld(
     concatenates the resulting PCM data into a single WAV file.
     """
     voice = voice_map.get(line["speaker"], voice_map["Alex"])
-    tmp = Path(tempfile.mktemp(suffix=".mp3", prefix=f"tts_{index:03d}_"))
+    tmp_file = tempfile.NamedTemporaryFile(suffix=".mp3", prefix=f"tts_{index:03d}_", delete=False)
+    tmp_file.close()
+    tmp = Path(tmp_file.name)
     chunks = _split_text(line["text"], _INWORLD_MAX_CHARS)
 
     for attempt in range(1, _MAX_RETRIES + 1):
